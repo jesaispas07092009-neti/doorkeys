@@ -1710,52 +1710,54 @@ async function enterPinDigit(n) {
   if (lockoutUntil > Date.now()) return;
   pin += String(n);
   renderDots(false);
-  const expectedLen = state.security?.pinLength || 4;
-  if (pin.length >= expectedLen) {
-    const ok = await verifyPin(pin);
-    if (ok) {
-      // Dériver la clé de chiffrement et charger l'état
-      try {
-        const key = await deriveEncKey(norm(pin), state.security.encKeySalt);
-        const raw = localStorage.getItem(KEY);
-        if (raw) {
-          const wrapper = JSON.parse(raw);
-          const decrypted = await decryptData(key, wrapper.data);
-          encKey = key;
-          const base = defaultState();
-          state = {
-            ...base, ...decrypted,
-            security: { ...base.security, ...wrapper.security },
-            settings: { ...base.settings, ...(decrypted.settings || {}) },
-            addresses: Array.isArray(decrypted.addresses) ? decrypted.addresses.map(normalizeAddr) : [],
-            shares: Array.isArray(decrypted.shares) ? decrypted.shares.map(normalizeShare) : [],
-          };
-        }
-        unlock();
-      } catch {
-        renderDots(true);
-        E.pinDots.classList.add('shake');
-        setTimeout(() => { pin = ''; renderDots(false); E.pinDots.classList.remove('shake'); }, 430);
+
+  if (pin.length < 4) return;
+
+  const expectedLen = state.security?.pinLength || 8;
+  const isLastChance = pin.length >= expectedLen || pin.length >= 8;
+
+  const ok = await verifyPin(pin);
+  if (ok) {
+    try {
+      const key = await deriveEncKey(norm(pin), state.security.encKeySalt);
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const wrapper = JSON.parse(raw);
+        const decrypted = await decryptData(key, wrapper.data);
+        encKey = key;
+        const base = defaultState();
+        state = {
+          ...base, ...decrypted,
+          security: { ...base.security, ...wrapper.security },
+          settings: { ...base.settings, ...(decrypted.settings || {}) },
+          addresses: Array.isArray(decrypted.addresses) ? decrypted.addresses.map(normalizeAddr) : [],
+          shares: Array.isArray(decrypted.shares) ? decrypted.shares.map(normalizeShare) : [],
+        };
       }
-    } else {
+      unlock();
+    } catch {
       renderDots(true);
       E.pinDots.classList.add('shake');
-      pinAttempts++;
-      
-      if (pinAttempts >= MAX_ATTEMPTS) {
-        const duration = LOCKOUT_STEPS[Math.min(lockoutStep, LOCKOUT_STEPS.length - 1)];
-        lockoutStep++;
-        lockoutUntil = Date.now() + duration;
-        saveLockout();
-        startLockoutTimer();
-      } else {
-        saveLockout();
-        const rem = MAX_ATTEMPTS - pinAttempts;
-        if (rem <= 2) toast(`PIN incorrect — ${rem} essai${rem > 1 ? 's' : ''} restant${rem > 1 ? 's' : ''}`);
-      }
       setTimeout(() => { pin = ''; renderDots(false); E.pinDots.classList.remove('shake'); }, 430);
     }
+  } else if (isLastChance) {
+    renderDots(true);
+    E.pinDots.classList.add('shake');
+    pinAttempts++;
+    if (pinAttempts >= MAX_ATTEMPTS) {
+      const duration = LOCKOUT_STEPS[Math.min(lockoutStep, LOCKOUT_STEPS.length - 1)];
+      lockoutStep++;
+      lockoutUntil = Date.now() + duration;
+      saveLockout();
+      startLockoutTimer();
+    } else {
+      saveLockout();
+      const rem = MAX_ATTEMPTS - pinAttempts;
+      if (rem <= 2) toast(`PIN incorrect — ${rem} essai${rem > 1 ? 's' : ''} restant${rem > 1 ? 's' : ''}`);
+    }
+    setTimeout(() => { pin = ''; renderDots(false); E.pinDots.classList.remove('shake'); }, 430);
   }
+  // Sinon : incorrect mais longueur pas encore atteinte, on attend silencieusement
 }
 
 // ── MODÈLE ADRESSE ──
