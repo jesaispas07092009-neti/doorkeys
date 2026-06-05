@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#080a0e"/>
@@ -14,50 +15,36 @@
   ██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██╗███████╗   ██║   ███████║
   ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝
 
-  VERSION FINALE — doorkeys.html
-  ════════════════════════════════════════════════════════════════════
-  Base          : doorkeys-fixed (architecture la plus avancée)
-  Sécurité      : AES-GCM + PBKDF2 200k iterations
-  Photos        : IndexedDB — hors localStorage quota
-  PWA           : Manifest inline + Service Worker blob
-  Lockout       : sessionStorage + backoff 30s→2min→10min
-  CSP           : Content-Security-Policy stricte
-  CDN           : Versions épinglées tabler@3.19.0 / leaflet@1.9.4
-  Invite        : Chiffrement AES-GCM, clé dans fragment #k=
-  changePin     : Re-chiffrement complet de l'état
-  importBackup  : Conserve le security existant + restaure IndexedDB
-  resetAll      : Vide sessionStorage + IndexedDB + localStorage
-  ARIA          : 200+ aria-labels, roles, aria-live
-  Navigation    : Nav unique 5 items + FAB + sheet "Plus" (mobile)
-                  Sidebar desktop (11 vues)
-  GPS           : Détection proximité au déverrouillage (<250m)
-  Backup        : Rappel automatique si > 30 jours sans export
-  Swipe         : Swipe-to-delete sur les cartes adresses
-  Search        : Bouton clear + filter chips catégories
-  Quick banner  : Accès rapide épinglé
-  Qualité JPEG  : 0.75 (compression photos)
-  noopener      : noreferrer ajouté partout
+  VERSION FUSION — Meilleurs éléments de v2, v3, v4 et merged
+  ════════════════════════════════════════════════════════════
+  Base          : v4 (architecture la plus avancée)
+  Sécurité      : AES-GCM + PBKDF2 200k iterations (v4)
+  Photos        : IndexedDB — hors localStorage quota (v4)
+  PWA           : Manifest inline + Service Worker blob (v4)
+  Lockout       : sessionStorage + backoff 30s→2min→10min (v4)
+  CSP           : Content-Security-Policy stricte (v4)
+  CDN           : Versions épinglées tabler@3.19.0 (v4)
+  Invite        : Chiffrement AES-GCM, clé dans fragment # (v4)
+  changePin     : Re-chiffrement complet de l'état (v4)
+  importBackup  : Conserve le security existant (v4)
+  resetAll      : Vide sessionStorage + IndexedDB (v4)
+  UI reveal     : "Toucher pour révéler" + masquage auto 5s (v3+v4)
+  Search        : Bouton clear + filter chips (v3+v4)
+  Quick banner  : Accès rapide épinglé (v3+v4)
+  ARIA          : aria-hidden sur sheets open/close (v4)
+  Qualité JPEG  : 0.75 (v2+v4)
+  noopener      : noreferrer ajouté partout (v4)
 -->
-<!-- CSP production -->
-<!-- CSP désactivée en mode fichier local — à réactiver si hébergé sur un serveur -->
-<!-- PWA Manifest inline -->
+<!-- CSP corrigée -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; connect-src https://api-adresse.data.gouv.fr https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; img-src 'self' data: https://*.tile.openstreetmap.org blob:; worker-src 'self' blob:; manifest-src 'self' data:"/>
 <!-- PWA Manifest inline -->
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22DoorKeys%22%2C%22short_name%22%3A%22DoorKeys%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23080a0e%22%2C%22theme_color%22%3A%22%23080a0e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%252096%252096%2527%253E%253Crect%2520width%3D%252796%2527%2520height%3D%252796%2527%2520rx%3D%252720%2527%2520fill%3D%2527%2523111520%2527%2F%253E%253Ctext%2520x%3D%252748%2527%2520y%3D%252765%2527%2520text-anchor%3D%2527middle%2527%2520font-size%3D%252750%2527%253E%25E2%258C%2582%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D"/>
-<title>DoorKeys — Ton carnet d'accès privé</title>
-<meta name="description" content="DoorKeys garde tous tes codes d'accès au même endroit. Chiffré, privé, offline."/>
-<meta name="robots" content="noindex, nofollow"/>
-<meta property="og:title" content="DoorKeys"/>
-<meta property="og:description" content="Ton carnet d'accès privé — chiffré sur ton appareil"/>
-<meta property="og:type" content="website"/>
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="DoorKeys"/>
-<meta name="twitter:description" content="Codes d'accès chiffrés, toujours à portée de main"/>
-
+<title>DoorKeys — Fusion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<!-- CDN épinglées : tabler@3.19.0, leaflet@1.9.4 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
-<!-- Leaflet CSS chargé dynamiquement à l'ouverture de la carte -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 
 /* ── VARIABLES ── */
@@ -94,15 +81,7 @@
 
 /* ── RESET ── */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent }
-html { height: 100%; background: var(--bg); }
-body {
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-}
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px }
 button, input, textarea, select { font: inherit; color: inherit }
 button { cursor: pointer; border: none; background: none }
 a { color: inherit; text-decoration: none }
@@ -110,14 +89,8 @@ a { color: inherit; text-decoration: none }
 
 /* ── APP SHELL ── */
 #app {
-  height: 100vh;
-  max-width: 480px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  padding-top: env(safe-area-inset-top, 0);
+  height: 100vh; max-width: 480px; margin: 0 auto;
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
   background:
     radial-gradient(ellipse 120% 60% at 50% -20%, rgba(232,213,163,.06) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 80% 100%, rgba(92,127,255,.04) 0%, transparent 50%),
@@ -479,17 +452,17 @@ a { color: inherit; text-decoration: none }
 
 /* ── BACKDROP + SHEETS ── */
 .backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  position: absolute; inset: 0; background: rgba(0,0,0,.75);
   opacity: 0; pointer-events: none; transition: .25s; z-index: 60;
   backdrop-filter: blur(4px);
 }
 .backdrop.open { opacity: 1; pointer-events: auto }
 .sheet {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 70;
   background: var(--bg1); border-top: 1px solid var(--border2);
-  border-radius: 28px 28px 0 0; max-height: 92vh; max-height: 92dvh;
+  border-radius: 28px 28px 0 0; max-height: 92vh;
   transform: translateY(100%); transition: .3s cubic-bezier(.4,0,.2,1);
-  overflow: auto; padding-bottom: env(safe-area-inset-bottom, 0);
+  overflow: auto; padding-bottom: env(safe-area-inset-bottom,0);
 }
 .sheet.open { transform: translateY(0) }
 .handle { width: 44px; height: 4px; border-radius: 999px; background: var(--border3); margin: 14px auto 6px }
@@ -797,7 +770,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 /* ── MODAL ── */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 400;
+  position: absolute; inset: 0; z-index: 400;
   background: rgba(0,0,0,.8); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center; padding: 24px;
   opacity: 0; pointer-events: none; transition: .25s;
@@ -826,7 +799,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 /* ── TOAST ── */
 .toast {
-  position: fixed; left: 50%;
+  position: absolute; left: 50%;
   bottom: calc(90px + env(safe-area-inset-bottom,0));
   transform: translateX(-50%) translateY(8px);
   background: var(--bg2); border: 1px solid var(--border2);
@@ -839,7 +812,6 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .toast.copied  { border-color: var(--goldLine); color: var(--gold) }
 
 /* ── ANIMATIONS ── */
-@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(16px) }
   to   { opacity: 1; transform: translateY(0) }
@@ -867,379 +839,13 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
   border: 2px solid var(--border2); border-top-color: var(--gold);
   animation: spin .7s linear infinite; flex-shrink: 0;
 }
+@keyframes spin { to { transform: rotate(360deg) } }
 
-/* Small phones */
 @media (max-width: 380px) {
   .stats-grid { grid-template-columns: 1fr }
   .cat-picker { flex-wrap: wrap }
-  .numpad { width: 260px; }
-  .key { height: 68px; }
 }
-
-/* ══════════════════════════════════════════
-   RESPONSIVE — DESKTOP & TABLET
-   ══════════════════════════════════════════ */
-
-/* Tablet (481px – 768px) */
-@media (min-width: 481px) {
-  #app {
-    max-width: 600px;
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-  }
-  .numpad { width: 320px; }
-  .key { height: 84px; font-size: 28px; }
-  .stats-grid { grid-template-columns: repeat(4, 1fr); }
-  .map-wrap { height: calc(100vh - 260px); }
-}
-
-/* Desktop large (769px+) */
-@media (min-width: 769px) {
-  body {
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 50%, rgba(232,213,163,.04) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 50%, rgba(92,127,255,.03) 0%, transparent 60%),
-      var(--bg);
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    min-height: 100vh;
-    overflow: auto; /* allow body scroll on desktop */
-  }
-
-  html { height: auto; min-height: 100vh; overflow: auto; }
-  body { height: auto; min-height: 100vh; overflow: auto; }
-
-  /* App frame — sidebar + main panel */
-  #app {
-    max-width: 1100px;
-    width: 100%;
-    min-height: 100vh;
-    height: auto;
-    flex-direction: row;
-    overflow: visible;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    margin: 0 auto;
-  }
-
-  /* Lock screen — centred column, narrower */
-  #lock {
-    width: 100%;
-    border-radius: 0;
-  }
-
-  /* Shell — sidebar layout */
-  #shell {
-    flex-direction: row !important;
-    width: 100%;
-    overflow: visible !important;
-  }
-
-  /* ── LEFT SIDEBAR ── */
-  .topbar {
-    display: none; /* replaced by sidebar */
-  }
-
-  /* Sidebar wrapper */
-  #shell::before {
-    content: '';
-    display: none;
-  }
-
-  /* We build a left sidebar by repurposing the nav elements */
-  .bottom-nav, .subnav {
-    flex-direction: column;
-    width: 220px;
-    min-width: 220px;
-    border-top: none;
-    border-right: 1px solid var(--border);
-    border-bottom: none;
-    background: var(--bg1);
-    padding: 0;
-    min-height: 100vh;
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    overflow-y: auto;
-    z-index: 20;
-  }
-
-  .bottom-nav {
-    padding-top: 0;
-    flex-shrink: 0;
-  }
-
-  .subnav {
-    border-right: none;
-    border-top: 1px solid var(--border);
-    width: 100%;
-    min-width: unset;
-    position: static;
-    min-height: unset;
-  }
-
-  /* Sidebar brand header */
-  .bottom-nav::before {
-    content: '⌂  DoorKeys';
-    display: flex;
-    align-items: center;
-    font-family: var(--serif);
-    font-size: 20px;
-    letter-spacing: -.01em;
-    color: var(--text);
-    padding: 22px 18px 18px;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .nav-item {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 12px;
-    font-size: 13px !important;
-    padding: 12px 18px;
-    border-radius: 0;
-    width: 100%;
-    letter-spacing: .02em;
-    text-transform: none;
-  }
-  .nav-item i { font-size: 18px !important; }
-  .nav-item.active { background: var(--goldBg); border-left: 3px solid var(--gold); padding-left: 15px; }
-  .nav-item.active i { transform: none; }
-
-  .nav-fab {
-    padding: 10px 14px;
-    justify-content: stretch;
-    flex: 0 0 auto;
-  }
-  .fab {
-    width: 100%;
-    border-radius: 14px;
-    height: 44px;
-    margin-top: 0;
-    font-size: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .fab::after { content: 'Ajouter'; font-size: 13px; font-weight: 700; }
-
-  /* ── RIGHT MAIN CONTENT ── */
-  #main {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Topbar replacement in content area — shown on desktop */
-  #desktopTopbar {
-    display: flex !important;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(8,10,14,.88);
-    backdrop-filter: blur(20px);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    flex-shrink: 0;
-  }
-
-  #quickBanner { padding: 12px 24px 0; }
-  .search-wrap { padding: 12px 24px 0; }
-  .filter-bar { padding: 8px 24px 0; }
-
-  .view { padding: 20px 24px 32px; }
-
-  .stats-grid { grid-template-columns: repeat(4, 1fr); }
-
-  .sheet {
-    left: 220px; /* offset sidebar width */
-    max-width: 560px;
-    margin: 0 auto;
-    right: 0;
-    border-radius: 28px 28px 0 0;
-  }
-
-  .backdrop { left: 220px; }
-
-  .modal-overlay { left: 220px; }
-
-  .toast { left: calc(220px + 50%); }
-
-  .map-wrap { height: calc(100vh - 200px); min-height: 400px; }
-
-  /* Wider cards on desktop */
-  .addr-card { padding: 18px 20px; }
-
-  /* Form grid on desktop — 2 col main */
-  .form-row { gap: 16px; }
-
-  /* Settings look better with more padding */
-  .settings-section { border-radius: var(--radius); }
-}
-
-/* Ultra-wide (1200px+) */
-@media (min-width: 1200px) {
-  #app { max-width: 1280px; }
-  .bottom-nav, .subnav { width: 260px; min-width: 260px; }
-  .sheet { left: 260px; }
-  .backdrop { left: 260px; }
-  .modal-overlay { left: 260px; }
-  .toast { left: calc(260px + 50%); }
-  .view { padding: 24px 32px 40px; }
-}
-
-/* Hover effects — desktop only */
-@media (hover: hover) {
-  .addr-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
-  .nav-item:hover:not(.active) { background: var(--bg2); }
-  .btn:hover { opacity: .9; }
-  .round-btn:hover { background: var(--bg3); border-color: var(--border2); }
-  .icon-btn:hover { background: var(--bg3); border-color: var(--border2); color: var(--text); }
-  .key:hover:not(:disabled) { background: var(--bg3); }
-  .prox-item:hover { border-color: var(--border2); }
-  .freq-row:hover { border-color: var(--border2); background: var(--bg3); }
-  .timeline-card:hover { border-color: var(--border2); background: var(--bg3); }
-  .quartier-mini:hover { border-color: var(--border2); transform: translateY(-1px); }
-  .autocomplete-item:hover { background: var(--bg3); }
-  .settings-row:hover { background: var(--bg3); }
-  .filter-chip:hover:not(.active) { border-color: var(--border2); color: var(--text); }
-  .sort-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
-  .fab:hover { transform: scale(1.05); box-shadow: 0 12px 36px rgba(232,213,163,.35); }
-  .quick-field:hover { border-color: var(--border2); }
-}
-
-/* Touch devices — disable hover side effects */
-@media (hover: none) {
-  .addr-card:hover { transform: none; box-shadow: 0 2px 12px rgba(0,0,0,.2); }
-}
-
-/* Safe area — notch phones */
-@supports (padding: env(safe-area-inset-bottom)) {
-  .bottom-nav { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
-}
-
-/* Focus visible — keyboard nav */
-:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-.shell-layout { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-.hidden { display: none !important; }
-
-/* ── SWIPE TO DELETE ── */
-.addr-card-wrap { position: relative; overflow: hidden; border-radius: var(--radius); margin-bottom: 10px }
-.addr-card-wrap .addr-card { margin-bottom: 0 }
-.swipe-delete-bg {
-  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
-  background: rgba(224,85,85,.18); border-radius: var(--radius);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--red); font-size: 20px; pointer-events: none;
-  opacity: 0; transition: opacity .15s;
-}
-.addr-card-wrap.swiping .swipe-delete-bg { opacity: 1 }
-
-/* ── GPS NEAR BANNER ── */
-#gpsBanner {
-  padding: 0 18px; flex-shrink: 0; overflow: hidden;
-  max-height: 0; transition: max-height .45s cubic-bezier(.4,0,.2,1);
-}
-#gpsBanner.visible { max-height: 220px }
-.gps-banner-inner {
-  background: linear-gradient(135deg, rgba(82,184,122,.12), rgba(82,184,122,.06));
-  border: 1px solid rgba(82,184,122,.3); border-radius: 18px;
-  padding: 14px 16px; margin-top: 10px; position: relative; overflow: hidden;
-}
-.gps-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--green); margin-bottom: 6px; display: flex; align-items: center; gap: 6px }
-.gps-addr-name { font-family: var(--serif); font-size: 19px; letter-spacing: -.01em; color: var(--text); margin-bottom: 2px }
-.gps-dist { font-size: 12px; color: var(--text2); margin-bottom: 10px }
-.gps-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
-.gps-code-reveal {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 38px; padding: 0 14px; border-radius: 12px;
-  background: rgba(82,184,122,.15); border: 1px solid rgba(82,184,122,.35);
-  color: var(--green); font-size: 13px; font-weight: 700; cursor: pointer;
-  transition: .15s; font-family: var(--mono);
-}
-.gps-code-reveal:active { transform: scale(.96) }
-.gps-open-btn { font-size: 12px; color: var(--text3); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px }
-.gps-dismiss {
-  position: absolute; top: 10px; right: 12px;
-  width: 26px; height: 26px; border-radius: 8px;
-  background: rgba(255,255,255,.06); border: none;
-  color: var(--text3); cursor: pointer; display: grid; place-items: center; font-size: 13px;
-}
-
-/* ── BACKUP REMINDER ── */
-#backupReminder {
-  padding: 0 18px; flex-shrink: 0; overflow: hidden;
-  max-height: 0; transition: max-height .4s cubic-bezier(.4,0,.2,1);
-}
-#backupReminder.visible { max-height: 100px }
-.backup-reminder-inner {
-  background: rgba(232,213,163,.05); border: 1px solid rgba(232,213,163,.15);
-  border-radius: 14px; padding: 10px 14px; margin-top: 8px;
-  display: flex; align-items: center; gap: 10px;
-}
-.backup-reminder-inner i { color: var(--gold); font-size: 18px; flex-shrink: 0 }
-.backup-reminder-text { flex: 1; font-size: 12px; color: var(--text2); line-height: 1.4 }
-.backup-reminder-btn {
-  height: 32px; padding: 0 12px; border-radius: 10px;
-  background: var(--goldBg); border: 1px solid var(--goldLine);
-  color: var(--gold); font-size: 12px; font-weight: 700; cursor: pointer;
-  flex-shrink: 0; transition: .15s;
-}
-.backup-reminder-btn:active { transform: scale(.96) }
-
-/* ── MORE SHEET ── */
-#moreSheet {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
-  background: var(--bg1); border-top: 1px solid var(--border2);
-  border-radius: 28px 28px 0 0;
-  transform: translateY(100%); transition: .3s cubic-bezier(.4,0,.2,1);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-#moreSheet.open { transform: translateY(0) }
-.more-sheet-title { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); padding: 16px 16px 10px }
-.more-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; padding: 0 14px 20px;
-}
-.more-item {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 7px; padding: 14px 6px; border-radius: 16px;
-  background: var(--bg2); border: 1px solid var(--border);
-  cursor: pointer; transition: .15s;
-  color: var(--text3); font-size: 10px; font-weight: 700;
-  letter-spacing: .03em; text-transform: uppercase; text-align: center;
-  -webkit-user-select: none; user-select: none;
-}
-.more-item i { font-size: 22px; color: var(--text2) }
-.more-item:active { background: var(--bg3); transform: scale(.95) }
-.more-item.active-view { background: var(--goldBg); border-color: var(--goldLine); color: var(--gold) }
-.more-item.active-view i { color: var(--gold) }
-@media (hover: hover) { .more-item:hover { background: var(--bg3); border-color: var(--border2); } }
-
-/* ── HIDE SUBNAV ON MOBILE — replaced by More button ── */
-.subnav { display: none !important }
-@media (min-width: 769px) {
-  .subnav { display: flex !important }
-  #moreSheet { left: 220px; max-width: 560px; right: 0; }
-  .nav-item[data-view="more"] { display: none }
-}
-@media (min-width: 1200px) {
-  #moreSheet { left: 260px; }
-}
-
+</style>
 </head>
 <body>
 <div id="app">
@@ -1298,9 +904,9 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 </div>
 
 <!-- ══ APP SHELL ══ -->
-<div id="shell" class="hidden shell-layout">
+<div id="shell" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
 
-  <!-- Topbar mobile -->
+  <!-- Topbar -->
   <div class="topbar" role="banner">
     <div class="brand">
       <div class="brand-badge" aria-hidden="true">⌂</div>
@@ -1316,24 +922,8 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
     </div>
   </div>
 
-  <!-- Topbar desktop (hidden on mobile via CSS) -->
-  <div id="desktopTopbar" style="display:none">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span id="workspaceInfoDesktop" style="font-size:14px;color:var(--text2)">Espace privé</span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="icon-btn" id="lockNowBtnDesktop" aria-label="Verrouiller l'application"><i class="ti ti-lock" aria-hidden="true"></i> <span style="font-size:12px;margin-left:4px">Verrouiller</span></button>
-    </div>
-  </div>
-
   <!-- Quick Access Banner -->
   <div id="quickBanner" class="hidden"></div>
-
-  <!-- GPS Near Banner -->
-  <div id="gpsBanner" aria-live="polite"></div>
-
-  <!-- Backup Reminder -->
-  <div id="backupReminder"></div>
 
   <!-- Search + filtres -->
   <div class="search-wrap hidden" id="searchWrap">
@@ -1500,46 +1090,29 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
   </div><!-- /main -->
 
-  <!-- Bottom Nav — 5 items + FAB -->
+  <!-- Bottom Nav principal -->
   <nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
     <div class="nav-item active" data-view="home" role="button" tabindex="0" aria-label="Accueil"><i class="ti ti-home" aria-hidden="true"></i>Accueil</div>
     <div class="nav-item" data-view="addresses" role="button" tabindex="0" aria-label="Liste des adresses"><i class="ti ti-list" aria-hidden="true"></i>Liste</div>
+    <div class="nav-item" data-view="map" role="button" tabindex="0" aria-label="Carte"><i class="ti ti-map" aria-hidden="true"></i>Carte</div>
     <div class="nav-fab">
       <button class="fab" id="addBtn" aria-label="Ajouter une adresse"><i class="ti ti-plus" aria-hidden="true"></i></button>
     </div>
     <div class="nav-item" data-view="favorites" role="button" tabindex="0" aria-label="Favoris"><i class="ti ti-star" aria-hidden="true"></i>Favoris</div>
-    <div class="nav-item" data-view="more" id="moreNavBtn" role="button" tabindex="0" aria-label="Plus de vues" aria-haspopup="true"><i class="ti ti-dots" aria-hidden="true"></i>Plus</div>
+    <div class="nav-item" data-view="shares" role="button" tabindex="0" aria-label="Partages"><i class="ti ti-share" aria-hidden="true"></i>Partages</div>
+    <div class="nav-item" data-view="frequency" role="button" tabindex="0" aria-label="Statistiques de fréquence"><i class="ti ti-flame" aria-hidden="true"></i>Stats</div>
   </nav>
 
-  <!-- Sous-nav desktop uniquement (hidden mobile via CSS) -->
+  <!-- Sous-nav -->
   <nav class="subnav" aria-label="Navigation secondaire">
-    <div class="nav-item" data-view="map" style="font-size:8px" role="button" tabindex="0" aria-label="Carte"><i class="ti ti-map" style="font-size:18px" aria-hidden="true"></i>Carte</div>
-    <div class="nav-item" data-view="proximity" style="font-size:8px" role="button" tabindex="0" aria-label="Proximité"><i class="ti ti-map-pin" style="font-size:18px" aria-hidden="true"></i>Proximité</div>
-    <div class="nav-item" data-view="shares" style="font-size:8px" role="button" tabindex="0" aria-label="Partages"><i class="ti ti-share" style="font-size:18px" aria-hidden="true"></i>Partages</div>
-    <div class="nav-item" data-view="frequency" style="font-size:8px" role="button" tabindex="0" aria-label="Stats"><i class="ti ti-flame" style="font-size:18px" aria-hidden="true"></i>Stats</div>
-    <div class="nav-item" data-view="timeline" style="font-size:8px" role="button" tabindex="0" aria-label="Timeline"><i class="ti ti-timeline" style="font-size:18px" aria-hidden="true"></i>Timeline</div>
+    <div class="nav-item" data-view="proximity" style="font-size:8px" role="button" tabindex="0" aria-label="Adresses à proximité"><i class="ti ti-map-pin" style="font-size:18px" aria-hidden="true"></i>Proximité</div>
+    <div class="nav-item" data-view="timeline" style="font-size:8px" role="button" tabindex="0" aria-label="Chronologie"><i class="ti ti-timeline" style="font-size:18px" aria-hidden="true"></i>Timeline</div>
     <div class="nav-item" data-view="districts" style="font-size:8px" role="button" tabindex="0" aria-label="Quartiers"><i class="ti ti-building" style="font-size:18px" aria-hidden="true"></i>Quartiers</div>
     <div class="nav-item" data-view="categories" style="font-size:8px" role="button" tabindex="0" aria-label="Catégories"><i class="ti ti-tag" style="font-size:18px" aria-hidden="true"></i>Catégories</div>
     <div class="nav-item" data-view="settings" style="font-size:8px" role="button" tabindex="0" aria-label="Réglages"><i class="ti ti-settings" style="font-size:18px" aria-hidden="true"></i>Réglages</div>
   </nav>
 
 </div><!-- /shell -->
-
-<!-- MORE SHEET — navigation secondaire mobile -->
-<div id="moreSheet" role="dialog" aria-modal="true" aria-label="Plus de vues">
-  <div class="handle" aria-hidden="true"></div>
-  <div class="more-sheet-title">Explorer</div>
-  <div class="more-grid" id="moreGrid">
-    <div class="more-item" data-view="map" role="button" tabindex="0" aria-label="Carte"><i class="ti ti-map" aria-hidden="true"></i>Carte</div>
-    <div class="more-item" data-view="proximity" role="button" tabindex="0" aria-label="Proximité"><i class="ti ti-map-pin" aria-hidden="true"></i>Proximité</div>
-    <div class="more-item" data-view="frequency" role="button" tabindex="0" aria-label="Stats"><i class="ti ti-flame" aria-hidden="true"></i>Stats</div>
-    <div class="more-item" data-view="shares" role="button" tabindex="0" aria-label="Partages"><i class="ti ti-share" aria-hidden="true"></i>Partages</div>
-    <div class="more-item" data-view="timeline" role="button" tabindex="0" aria-label="Timeline"><i class="ti ti-timeline" aria-hidden="true"></i>Timeline</div>
-    <div class="more-item" data-view="districts" role="button" tabindex="0" aria-label="Quartiers"><i class="ti ti-building" aria-hidden="true"></i>Quartiers</div>
-    <div class="more-item" data-view="categories" role="button" tabindex="0" aria-label="Catégories"><i class="ti ti-tag" aria-hidden="true"></i>Catégories</div>
-    <div class="more-item" data-view="settings" role="button" tabindex="0" aria-label="Réglages"><i class="ti ti-settings" aria-hidden="true"></i>Réglages</div>
-  </div>
-</div>
 
 <div class="backdrop" id="backdrop" aria-hidden="true"></div>
 
@@ -1724,40 +1297,11 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div><!-- /app -->
 
+<!-- Leaflet épinglé @1.9.4 ; defer = non-bloquant -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script>
 (() => {
 'use strict';
-
-// ── CRASH OVERLAY — écran noir impossible ──
-// Si une erreur JS survient AVANT que l'écran de déverrouillage soit visible,
-// cet overlay prend le relais et affiche l'erreur de façon lisible.
-function showCrashOverlay(msg) {
-  const existing = document.getElementById('crashOverlay');
-  if (existing) return;
-  const el = document.createElement('div');
-  el.id = 'crashOverlay';
-  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#080a0e;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;font-family:system-ui,sans-serif;color:#e8e8e8;text-align:center;';
-  el.innerHTML = `
-    <div style="font-size:40px;margin-bottom:20px">⌂</div>
-    <div style="font-size:20px;font-weight:700;margin-bottom:12px;color:#e8d5a3">DoorKeys</div>
-    <div style="font-size:13px;color:#888;margin-bottom:24px;max-width:320px;line-height:1.6">${msg}</div>
-    <button onclick="location.reload()" style="height:44px;padding:0 24px;border-radius:14px;background:#e8d5a3;border:none;color:#080a0e;font-size:14px;font-weight:700;cursor:pointer;">Recharger</button>
-    <div style="margin-top:16px;font-size:11px;color:#555">Ouvre la console (F12) pour voir le détail de l'erreur.</div>
-  `;
-  document.body ? document.body.appendChild(el) : document.addEventListener('DOMContentLoaded', () => document.body.appendChild(el));
-}
-
-window.onerror = (msg, src, line, col, err) => {
-  console.error('[DK]', msg, src, line, col, err);
-  showCrashOverlay(`Erreur inattendue — ligne ${line}<br><code style="font-size:11px;color:#e8826a">${String(msg).slice(0,120)}</code>`);
-};
-window.onunhandledrejection = e => {
-  console.error('[DK] Promise rejetée:', e.reason);
-  // On ne montre l'overlay que si le lock screen n'est pas déjà visible
-  const lock = document.getElementById('lock');
-  if (lock && !lock.classList.contains('hidden')) return;
-  showCrashOverlay(`Erreur asynchrone<br><code style="font-size:11px;color:#e8826a">${String(e.reason).slice(0,120)}</code>`);
-};
 
 // ── CONSTANTES ──
 const KEY         = 'doorkeys_fusion_enc';  // format chiffré AES-GCM
@@ -1810,7 +1354,6 @@ const E = {
   autoLockSelect: $('#autoLockSelect'), pinnedSelect: $('#pinnedSelect'),
   exportDataBtn: $('#exportDataBtn'), importDataBtn: $('#importDataBtn'),
   resetAllBtn: $('#resetAllBtn'), backupFile: $('#backupFile'),
-  moreNavBtn: $('#moreNavBtn'),
   proxContent: $('#proxContent'), freqPodium: $('#freqPodium'), freqList: $('#freqList'),
   freqPeriodBar: $('#freqPeriodBar'),
   timelineContent: $('#timelineContent'), districtsContent: $('#districtsContent'), catsContent: $('#catsContent'),
@@ -1825,13 +1368,13 @@ const defaultState = () => ({
   security: { salt: '', pinHash: '', encKeySalt: '' },
   addresses: [],
   shares: [],
-  settings: { autoLockMinutes: 2, pinnedAddressId: '', lastExportAt: 0 },
+  settings: { autoLockMinutes: 2, pinnedAddressId: '' },
 });
 
 let state = defaultState();
 let unlocked = false, currentView = 'home', currentSort = 'recent',
     currentSearch = '', currentFilter = '', freqPeriod = 'all';
-let activeId = '', editId = '', editPhoto = '', editPhotoId = '', editCat = 'autre', editEmoji = '🏠';
+let activeId = '', editId = '', editPhoto = '', editCat = 'autre', editEmoji = '🏠';
 let pin = '', inactivityTimer = null, pendingInvite = null;
 let codeRevealTimer = null, revealElId = '';
 let leafletMap = null, mapMarkers = [], mapInitialized = false;
@@ -1841,8 +1384,6 @@ let pinAttempts = 0, lockoutUntil = 0, lockoutInterval = null, lockoutStep = 0;
 let deferredInstallPrompt = null;
 
 let encKey = null;
-
-let storageIgnore = false;
 
 // ── CHIFFREMENT AES-GCM (PBKDF2 200k itérations) ──
 async function deriveEncKey(pinStr, saltHex) {
@@ -1899,13 +1440,14 @@ async function saveState() {
     version: state.version, workspaceName: state.workspaceName,
     addresses: state.addresses, shares: state.shares, settings: state.settings,
   };
+  
   const wrapper = {
     security: state.security,
     data: await encryptData(encKey, toSave),
   };
-  storageIgnore = true;
+  let ignoreNext = true;
   localStorage.setItem(KEY, JSON.stringify(wrapper));
-  setTimeout(() => { storageIgnore = false; }, 100);
+  setTimeout(() => { ignoreNext = false; }, 100);
   return wrapper;
 }
 function normalizeShare(s) {
@@ -2047,9 +1589,9 @@ function modal({ title = '', msg = '', confirmLabel = 'Confirmer', confirmClass 
   });
 }
 function closeModal(r) { E.modalOverlay.classList.remove('open'); if (modalResolve) { modalResolve(r); modalResolve = null; } }
-E.modalCancel?.addEventListener('click', () => closeModal(null));
-E.modalConfirm?.addEventListener('click', () => { const v = E.modalInput.classList.contains('hidden') ? true : E.modalInput.value; closeModal(v); });
-E.modalOverlay?.addEventListener('click', e => { if (e.target === E.modalOverlay) closeModal(null); });
+E.modalCancel.addEventListener('click', () => closeModal(null));
+E.modalConfirm.addEventListener('click', () => { const v = E.modalInput.classList.contains('hidden') ? true : E.modalInput.value; closeModal(v); });
+E.modalOverlay.addEventListener('click', e => { if (e.target === E.modalOverlay) closeModal(null); });
 
 // ── VERROU ──
 function lock() {
@@ -2058,12 +1600,6 @@ function lock() {
   pin = '';
   renderDots(false);
   closeSheets();
-  closeMoreSheet();
-  // Hide transient banners
-  const gpsEl = document.getElementById('gpsBanner');
-  if (gpsEl) { gpsEl.classList.remove('visible'); gpsEl.innerHTML = ''; }
-  const remEl = document.getElementById('backupReminder');
-  if (remEl) { remEl.classList.remove('visible'); remEl.innerHTML = ''; }
   E.shell.classList.add('hidden');
   E.lock.classList.remove('hidden', 'hiding');
   showSetupOrUnlock();
@@ -2072,17 +1608,9 @@ function lock() {
 }
 function unlock() {
   unlocked = true;
-  gpsCheckDone = false; // reset so each unlock re-checks
   resetLockout();
   E.lock.classList.add('hiding');
-  setTimeout(() => {
-    E.lock.classList.add('hidden');
-    E.shell.classList.remove('hidden');
-    // GPS check après un court délai pour laisser l'UI s'afficher
-    setTimeout(() => checkGpsProximity(), 800);
-    // Backup reminder
-    setTimeout(() => checkBackupReminder(), 1500);
-  }, 500);
+  setTimeout(() => { E.lock.classList.add('hidden'); E.shell.classList.remove('hidden'); }, 500);
   renderAll();
   bumpInactivity();
   if (pendingInvite) setTimeout(() => openInvitePreview(pendingInvite), 600);
@@ -2117,10 +1645,7 @@ function renderDots(err = false) {
   }
 }
 async function setupSpace() {
-  if (!crypto?.subtle) {
-    toast('WebCrypto non disponible — utilise HTTPS ou GitHub Pages');
-    return;
-  }
+  if (!crypto?.subtle?.digest) { toast('Navigateur non compatible'); return; }
   const w = E.setupWorkspace.value.trim(), p1 = norm(E.setupPin.value), p2 = norm(E.setupPin2.value);
   if (!w) return toast('Ajoute un nom d\'espace');
   if (p1.length < 4) return toast('PIN trop court (4 min)');
@@ -2217,13 +1742,12 @@ function normalizeAddr(a) {
     sharedMeta: a.sharedMeta || null,
     lat: typeof a.lat === 'number' ? a.lat : null,
     lng: typeof a.lng === 'number' ? a.lng : null,
-    visitLog: Array.isArray(a.visitLog) ? a.visitLog.slice(-200) : [], // max 200 entrées
   };
 }
-function updateAddress(id, patch) { state.addresses = state.addresses.map(a => a.id === id ? normalizeAddr({ ...a, ...patch, updatedAt: Date.now() }) : a); saveState().catch(()=>{}); }
-function addAddress(data) { const addr = normalizeAddr(data); state.addresses.unshift(addr); saveState().catch(()=>{}); return addr; }
+function updateAddress(id, patch) { state.addresses = state.addresses.map(a => a.id === id ? normalizeAddr({ ...a, ...patch, updatedAt: Date.now() }) : a); saveState(); }
+function addAddress(data) { const addr = normalizeAddr(data); state.addresses.unshift(addr); saveState(); return addr; }
 function toggleFav(id) { const a = byId(id); if (!a) return; updateAddress(id, { favorite: !a.favorite }); toast(a.favorite ? 'Retiré des favoris' : 'Ajouté aux favoris ⭐'); }
-function markVisit(id) { const a = byId(id); if (!a) return; const log = [...(a.visitLog || []), Date.now()].slice(-200); updateAddress(id, { visits: (a.visits || 0) + 1, lastVisited: Date.now(), visitLog: log }); }
+function markVisit(id) { const a = byId(id); if (!a) return; updateAddress(id, { visits: (a.visits || 0) + 1, lastVisited: Date.now() }); }
 
 // ── FILTRAGE / TRI ──
 function filteredAddresses() {
@@ -2271,16 +1795,7 @@ function cardHTML(a) {
 // ── NAVIGATION ──
 function setView(v) {
   currentView = v;
-  const secondaryViews = ['map','proximity','frequency','shares','timeline','districts','categories','settings'];
-  const isSecondary = secondaryViews.includes(v);
-  $$('.nav-item').forEach(b => {
-    if (b.dataset.view === 'more') {
-      b.classList.toggle('active', isSecondary);
-    } else {
-      b.classList.toggle('active', b.dataset.view === v);
-    }
-  });
-  $$('.more-item').forEach(b => b.classList.toggle('active-view', b.dataset.view === v));
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   $$('.view').forEach(vv => vv.classList.remove('active'));
   const vEl = $('#view-' + v); if (vEl) vEl.classList.add('active');
   const showSearch = ['addresses', 'favorites'].includes(v);
@@ -2303,12 +1818,9 @@ function renderViewContent(v) {
 // ── HEADER / STATS ──
 function renderHeader() {
   const c = state.addresses.length;
-  const info = unlocked
+  E.workspaceInfo.textContent = unlocked
     ? `${state.workspaceName || 'Mon espace'} · ${c} adresse${c > 1 ? 's' : ''}`
     : (state.workspaceName || 'Espace privé');
-  E.workspaceInfo.textContent = info;
-  const dtEl = document.getElementById('workspaceInfoDesktop');
-  if (dtEl) dtEl.textContent = info;
   E.statAddr.textContent = String(c);
   E.statFav.textContent  = String(state.addresses.filter(a => a.favorite).length);
   E.statShare.textContent = String(state.shares.length);
@@ -2324,14 +1836,16 @@ function renderHeader() {
 function renderHome() {
   if (state.addresses.length === 0) {
     E.homeOnboarding.innerHTML = `<div id="onboarding">
-      <div class="onboard-title">Prêt à démarrer</div>
-      <div class="onboard-sub">Ajoute ta première adresse avec son digicode. Tout reste chiffré sur cet appareil.</div>
-      <div class="btn-row" style="margin-top:20px">
-        <button class="btn primary" id="onboardAdd" style="height:52px;font-size:15px"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter une adresse</button>
+      <div class="onboard-title">Bienvenue 👋</div>
+      <div class="onboard-sub">DoorKeys garde tous tes codes d'accès au même endroit, toujours à portée de main.</div>
+      <div class="onboard-steps">
+        <div class="onboard-step"><div class="onboard-step-icon"><i class="ti ti-plus" aria-hidden="true"></i></div><div class="onboard-step-text"><strong>Ajoute une adresse</strong><span>Appuie sur + pour commencer</span></div></div>
+        <div class="onboard-step"><div class="onboard-step-icon"><i class="ti ti-lock-open" aria-hidden="true"></i></div><div class="onboard-step-text"><strong>Saisis les codes</strong><span>Digicode, étage, interphone…</span></div></div>
+        <div class="onboard-step"><div class="onboard-step-icon"><i class="ti ti-bolt" aria-hidden="true"></i></div><div class="onboard-step-text"><strong>Accès rapide</strong><span>Épingle ton adresse fréquente</span></div></div>
       </div>
+      <div class="btn-row"><button class="btn primary" id="onboardAdd"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter ma première adresse</button></div>
     </div>`;
     $('#onboardAdd')?.addEventListener('click', () => openEditor(''));
-
   } else {
     E.homeOnboarding.innerHTML = '';
   }
@@ -2381,46 +1895,6 @@ function renderQuickBanner() {
 }
 
 // ── LISTES ──
-function wrapWithSwipe(container) {
-  $$('[data-id]', container).forEach(card => {
-    if (card.closest('.addr-card-wrap')) return; // déjà wrappé
-    const wrap = document.createElement('div');
-    wrap.className = 'addr-card-wrap';
-    wrap.dataset.swipeId = card.dataset.id;
-    const bg = document.createElement('div');
-    bg.className = 'swipe-delete-bg';
-    bg.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i>';
-    card.parentNode.insertBefore(wrap, card);
-    wrap.appendChild(bg);
-    wrap.appendChild(card);
-    let startX = 0, currentX = 0, swiping = false;
-    card.addEventListener('touchstart', e => { startX = e.touches[0].clientX; swiping = false; }, { passive: true });
-    card.addEventListener('touchmove', e => {
-      const dx = e.touches[0].clientX - startX;
-      if (dx < -10) { swiping = true; currentX = Math.max(dx, -90); card.style.transform = `translateX(${currentX}px)`; wrap.classList.toggle('swiping', currentX < -30); }
-    }, { passive: true });
-    card.addEventListener('touchend', () => {
-      if (currentX < -60) {
-        // Confirmer suppression
-        card.style.transform = 'translateX(-100%)';
-        card.style.opacity = '0';
-        const id = card.dataset.id;
-        const a = byId(id);
-        setTimeout(async () => {
-          if (!a) { renderAll(); return; }
-          if (state.settings?.pinnedAddressId === id) state.settings = { ...state.settings, pinnedAddressId: '' };
-          if (a.photoId) await deletePhoto(a.photoId).catch(() => {});
-          state.addresses = state.addresses.filter(x => x.id !== id);
-          state.shares = state.shares.filter(s => s.addressId !== id);
-          saveState().catch(() => {}); renderAll(); toast('Supprimé');
-        }, 280);
-      } else {
-        card.style.transform = ''; wrap.classList.remove('swiping'); currentX = 0;
-      }
-      swiping = false;
-    });
-  });
-}
 function attachCardListeners(container) {
   $$('[data-id]', container).forEach(c => {
     const handler = e => {
@@ -2440,7 +1914,6 @@ function attachCardListeners(container) {
     c.addEventListener('click', handler);
     c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(e); } });
   });
-  wrapWithSwipe(container);
 }
 function renderList(view) {
   const list = view === 'favorites' ? E.favoritesList : E.addressesList;
@@ -2494,48 +1967,15 @@ function renderShares() {
   }));
 }
 
-// ── CHARGEMENT DYNAMIQUE DE LEAFLET (ne bloque pas l'init) ──
-let leafletLoading = false;
-function loadLeaflet() {
-  return new Promise((resolve, reject) => {
-    if (typeof L !== 'undefined') { resolve(); return; }
-    if (leafletLoading) {
-      // Attendre que le chargement en cours finisse
-      const check = setInterval(() => {
-        if (typeof L !== 'undefined') { clearInterval(check); resolve(); }
-      }, 100);
-      return;
-    }
-    leafletLoading = true;
-    // CSS Leaflet
-    if (!document.querySelector('link[href*="leaflet"]')) {
-      const lnk = document.createElement('link');
-      lnk.rel = 'stylesheet';
-      lnk.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(lnk);
-    }
-    // JS Leaflet
-    const s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.onload = () => { leafletLoading = false; resolve(); };
-    s.onerror = () => { leafletLoading = false; reject(new Error('Leaflet failed to load')); };
-    document.head.appendChild(s);
-  });
-}
-
 // ── CARTE ──
 function renderMap() {
-  const mapView = document.getElementById('view-map');
-  if (!mapView) return;
-
-  if (!mapInitialized) {
-    mapView.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--text2);font-size:13px;gap:10px"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Chargement de la carte…</div>';
-  }
-
-  loadLeaflet().then(() => {
+  requestAnimationFrame(() => {
     if (!mapInitialized) {
-      // Remettre le div#map
-      mapView.innerHTML = '<div class="map-wrap"><div id="map" aria-label="Carte des adresses enregistrées"></div></div>';
+      // Attendre que Leaflet soit chargé (defer)
+      if (typeof L === 'undefined') {
+        E.proxContent; // no-op, L chargé via defer
+        setTimeout(renderMap, 200); return;
+      }
       mapInitialized = true;
       leafletMap = L.map('map', { zoomControl: true, attributionControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(leafletMap);
@@ -2543,8 +1983,6 @@ function renderMap() {
     }
     setTimeout(() => leafletMap.invalidateSize(), 50);
     refreshMapMarkers();
-  }).catch(() => {
-    mapView.innerHTML = '<div class="empty-state"><i class="ti ti-wifi-off"></i><h3>Carte indisponible</h3><p>Vérifie ta connexion internet.</p></div>';
   });
 }
 let mapRenderToken = 0;
@@ -2566,7 +2004,7 @@ function refreshMapMarkers() {
   });
 }
 function addMapMarker(a) {
-  if (!leafletMap || a.lat === null || a.lng === null) return;
+  if (typeof L === 'undefined' || !leafletMap || a.lat === null || a.lng === null) return;
   const catColors = { famille: '#e05555', amis: '#52b87a', boulot: '#5c7fff', autre: '#e8d5a3' };
   const col = catColors[a.category] || catColors.autre;
   const icon = L.divIcon({ className: '', html: `<div style="width:34px;height:34px;border-radius:50%;background:${col};border:2px solid #080a0e;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.6);" role="img" aria-label="${esc(a.name)}">${a.emoji || '🏠'}</div>`, iconSize: [34,34], iconAnchor: [17,17] });
@@ -2663,17 +2101,6 @@ async function reverseGeocodeDistrict(lat, lng) {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`;
     const data = await fetch(url).then(r => r.json());
     const a = data.address || {};
-    // Arrondissements parisiens: city_district = "Paris 11e Arrondissement" → extraire "11e"
-    if (a.city_district && /arrondissement/i.test(a.city_district)) {
-      const m = a.city_district.match(/(\d+[eè]?r?e?)/i);
-      if (m) return `Paris ${m[1]}`;
-    }
-    // Lyon, Marseille: même logique
-    if (a.city_district && /\d/.test(a.city_district)) {
-      const m = a.city_district.match(/(\d+)/);
-      if (m && a.city) return `${a.city} ${m[0]}e`;
-    }
-    // Quartier précis en priorité
     return a.quarter || a.suburb || a.neighbourhood || a.city_district || a.borough || a.city || '';
   } catch { return ''; }
 }
@@ -2740,10 +2167,9 @@ function renderFrequency() {
   const sorted = [...state.addresses]
     .map(a => {
       if (freqPeriod === 'all') return { ...a, periodVisits: a.visits || 0 };
-      // Comptage réel depuis visitLog
-      const log = a.visitLog || [];
-      const periodVisits = log.filter(ts => ts >= periodStart).length;
-      return { ...a, periodVisits };
+      // Pour une vraie granularité par période il faudrait un journal; on approche avec lastVisited
+      const inPeriod = a.lastVisited && a.lastVisited >= periodStart;
+      return { ...a, periodVisits: inPeriod ? (a.visits || 0) : 0 };
     })
     .filter(a => a.periodVisits > 0 || freqPeriod === 'all')
     .sort((a, b) => b.periodVisits - a.periodVisits);
@@ -2920,7 +2346,7 @@ async function renderDetail(a) {
     </div>
   `;
 }
-E.detailInner?.addEventListener('click', e => {
+E.detailInner.addEventListener('click', e => {
   const action = e.target.closest('[data-action]'); if (!action) return;
   const a = byId(activeId); if (!a) return;
   const act = action.dataset.action;
@@ -2965,7 +2391,7 @@ E.detailInner?.addEventListener('click', e => {
 
 // ── ÉDITEUR ──
 function openEditor(id) {
-  editId = id || ''; editPhoto = ''; editPhotoId = ''; editCat = 'autre'; editEmoji = '🏠';
+  editId = id || ''; editPhoto = ''; editCat = 'autre'; editEmoji = '🏠';
   E.editorTitle.textContent = id ? 'Modifier' : 'Nouvelle adresse';
   E.fId.value = id || ''; E.fAddress.dataset.lat = ''; E.fAddress.dataset.lng = '';
   [E.fName, E.fAddress, E.fCode, E.fFloor, E.fIntercom, E.fDistrict, E.fContact, E.fPhone, E.fNotes].forEach(f => f.value = '');
@@ -2977,7 +2403,7 @@ function openEditor(id) {
   E.deleteFromEditor.classList.toggle('hidden', !id);
   if (id) {
     const a = byId(id); if (!a) return;
-    editCat = a.category || 'autre'; editPhotoId = a.photoId || ''; editPhoto = ''; editEmoji = a.emoji || '🏠';
+    editCat = a.category || 'autre'; editPhoto = a.photoId || ''; editEmoji = a.emoji || '🏠';
     E.fName.value = a.name || ''; E.fAddress.value = a.address || '';
     if (a.lat) E.fAddress.dataset.lat = String(a.lat);
     if (a.lng) E.fAddress.dataset.lng = String(a.lng);
@@ -2997,16 +2423,16 @@ async function saveEditor() {
   const current = editId ? byId(editId) : null;
   const lat = parseFloat(E.fAddress.dataset.lat) || null, lng = parseFloat(E.fAddress.dataset.lng) || null;
   
-  let photoId = editPhotoId; // ID existant en IndexedDB
-  if (editPhoto) {
-    // Nouvelle photo sélectionnée (dataURL)
+  let photoId = current?.photoId || '';
+  if (editPhoto && editPhoto !== photoId) {
+    // editPhoto est un dataURL si nouvelle photo
     const newId = uid();
     await savePhoto(newId, editPhoto);
-    if (photoId) await deletePhoto(photoId); // supprimer l'ancienne
+    if (photoId) await deletePhoto(photoId);
     photoId = newId;
-  } else if (!editPhotoId && !editPhoto && current?.photoId) {
-    // photo effacée explicitement (clearPhotoBtn)
-    await deletePhoto(current.photoId);
+  } else if (!editPhoto && photoId) {
+    // photo effacée
+    await deletePhoto(photoId);
     photoId = '';
   }
   const data = {
@@ -3175,24 +2601,13 @@ async function changePin() {
   await saveState(); toast('PIN changé ✓', 'success');
 }
 
-async function exportBackup() {
+function exportBackup() {
   const { security: _sec, ...safeState } = state; // exclure security
-  // Inclure les photos dans le backup (base64 depuis IndexedDB)
-  const addressesWithPhotos = await Promise.all(safeState.addresses.map(async a => {
-    if (!a.photoId) return a;
-    const photoData = await getPhoto(a.photoId).catch(() => null);
-    return { ...a, _photoData: photoData || '' }; // _photoData pour réimport
-  }));
-  const exportData = { ...safeState, addresses: addressesWithPhotos, exportedAt: Date.now(), appVersion: 'fusion' };
-  const d = JSON.stringify(exportData, null, 2);
+  const d = JSON.stringify({ ...safeState, exportedAt: Date.now(), appVersion: 'fusion' }, null, 2);
   const blob = new Blob([d], { type: 'application/json' });
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = `doorkeys-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
-  URL.revokeObjectURL(url);
-  // Mettre à jour la date du dernier export
-  state.settings = { ...state.settings, lastExportAt: Date.now() };
-  saveState().catch(() => {});
-  toast('Sauvegarde exportée ✓', 'success');
+  URL.revokeObjectURL(url); toast('Sauvegarde exportée', 'success');
 }
 function importBackup(file) {
   if (!file) return;
@@ -3203,24 +2618,14 @@ function importBackup(file) {
       const ok = await modal({ title: 'Importer', msg: 'Remplacer toutes les données par ce fichier ?', confirmLabel: 'Importer', confirmClass: 'primary' });
       if (!ok) return;
       const base = defaultState();
-      // Restaurer les photos dans IndexedDB depuis _photoData
-      const restoredAddresses = await Promise.all((Array.isArray(data.addresses) ? data.addresses : []).map(async a => {
-        const norm = normalizeAddr(a);
-        if (a._photoData && a._photoData.startsWith('data:')) {
-          const newPhotoId = uid();
-          await savePhoto(newPhotoId, a._photoData).catch(() => {});
-          return { ...norm, photoId: newPhotoId };
-        }
-        return norm;
-      }));
       state = {
         ...base, ...data,
-        security: state.security,
+        security: state.security, // conserver la sécurité existante
         settings: { ...base.settings, ...(data.settings || {}) },
-        addresses: restoredAddresses,
+        addresses: Array.isArray(data.addresses) ? data.addresses.map(normalizeAddr) : [],
         shares: Array.isArray(data.shares) ? data.shares.map(normalizeShare) : [],
       };
-      await saveState(); renderAll(); toast('Import réussi ✓', 'success');
+      await saveState(); renderAll(); toast('Import réussi', 'success');
     } catch { toast('Fichier invalide'); }
   };
   r.readAsText(file);
@@ -3266,7 +2671,6 @@ function compressImage(file) {
 
 // ── SHEETS ──
 function openSheet(s) {
-  closeMoreSheet();
   [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet].forEach(x => x.classList.remove('open'));
   E.backdrop.classList.add('open');
   s.classList.add('open');
@@ -3275,7 +2679,6 @@ function openSheet(s) {
 }
 function closeSheets() {
   [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet].forEach(x => { x.classList.remove('open'); x.setAttribute('aria-hidden', 'true'); });
-  closeMoreSheet();
   E.backdrop.classList.remove('open');
   E.backdrop.setAttribute('aria-hidden', 'true');
   E.acList.innerHTML = '';
@@ -3286,48 +2689,31 @@ function closeSheets() {
   }
 }
 
-// ── PWA — Service Worker avec cache versionné ──
+// ── PWA INSTALL (Service Worker inline via blob) ──
+// Enregistrement SW via blob pour contourner l'absence de fichier externe
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  if (location.protocol === 'file:') return; // SW non supporté en file://
-  const CACHE_VER = 'doorkeys-v3';
   const swCode = `
-    const CACHE = '${CACHE_VER}';
+    const CACHE = 'doorkeys-fusion-v1';
     self.addEventListener('install', e => {
       e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname])));
       self.skipWaiting();
     });
-    self.addEventListener('activate', e => {
-      e.waitUntil(
-        caches.keys().then(keys =>
-          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-        ).then(() => self.clients.claim())
-      );
-    });
+    self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
     self.addEventListener('fetch', e => {
       if (e.request.method !== 'GET') return;
       e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
-        if (resp && resp.status === 200) {
-          const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
+        const clone = resp.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
         return resp;
-      }).catch(() => caches.match(e.request))));
+      })));
     });
   `;
   try {
     const blob = new Blob([swCode], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
     await navigator.serviceWorker.register(url, { scope: './' });
-  } catch { /* silencieux — pas bloquant */ }
-}
-// Nettoyage anciens SW — uniquement sur HTTPS, jamais dans <head>
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  try {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(reg => reg.unregister());
-    }).catch(() => {});
-  } catch(e) {}
+  } catch {}
 }
 registerSW();
 
@@ -3349,19 +2735,18 @@ $('#installPwaBtn')?.addEventListener('click', async () => {
 });
 
 // ── ÉVÉNEMENTS ──
-E.tabSetup?.addEventListener('click', () => { if (!isSetup()) showSetupOrUnlock(); });
-E.tabUnlock?.addEventListener('click', () => { if (isSetup()) showSetupOrUnlock(); });
-E.setupBtn?.addEventListener('click', setupSpace);
-E.numpad?.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (b && !b.disabled) enterPinDigit(b.dataset.n); });
-E.delBtn?.addEventListener('click', () => { if (lockoutUntil > Date.now()) return; pin = pin.slice(0, -1); renderDots(false); });
-E.lockNowBtn?.addEventListener('click', () => lock());
-document.getElementById('lockNowBtnDesktop')?.addEventListener('click', () => lock());
-E.settingsBtn?.addEventListener('click', () => setView('settings'));
-E.backdrop?.addEventListener('click', closeSheets);
-E.addBtn?.addEventListener('click', () => openEditor(''));
-E.closeEditor?.addEventListener('click', closeSheets);
-E.saveAddressBtn?.addEventListener('click', saveEditor);
-E.deleteFromEditor?.addEventListener('click', async () => {
+E.tabSetup.addEventListener('click', () => { if (!isSetup()) showSetupOrUnlock(); });
+E.tabUnlock.addEventListener('click', () => { if (isSetup()) showSetupOrUnlock(); });
+E.setupBtn.addEventListener('click', setupSpace);
+E.numpad.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (b && !b.disabled) enterPinDigit(b.dataset.n); });
+E.delBtn.addEventListener('click', () => { if (lockoutUntil > Date.now()) return; pin = pin.slice(0, -1); renderDots(false); });
+E.lockNowBtn.addEventListener('click', () => lock());
+E.settingsBtn.addEventListener('click', () => setView('settings'));
+E.backdrop.addEventListener('click', closeSheets);
+E.addBtn.addEventListener('click', () => openEditor(''));
+E.closeEditor.addEventListener('click', closeSheets);
+E.saveAddressBtn.addEventListener('click', saveEditor);
+E.deleteFromEditor.addEventListener('click', async () => {
   if (!editId) return;
   const a = byId(editId); if (!a) return;
   const ok = await modal({ title: 'Supprimer', msg: `Supprimer "${a.name}" ? Cette action est irréversible.`, confirmLabel: 'Supprimer', confirmClass: 'btn danger' });
@@ -3372,73 +2757,66 @@ E.deleteFromEditor?.addEventListener('click', async () => {
   state.shares = state.shares.filter(s => s.addressId !== editId);
   saveState(); closeSheets(); renderAll(); toast('Supprimé');
 });
-E.pickPhotoBtn?.addEventListener('click', () => E.fPhoto.click());
-E.fPhoto?.addEventListener('change', async () => {
+E.pickPhotoBtn.addEventListener('click', () => E.fPhoto.click());
+E.fPhoto.addEventListener('change', async () => {
   const file = E.fPhoto.files?.[0]; if (!file) return;
   editPhoto = await compressImage(file);
   E.photoName.textContent = file.name;
   E.clearPhotoBtn.classList.remove('hidden');
   toast('Photo ajoutée');
 });
-E.clearPhotoBtn?.addEventListener('click', () => { editPhoto = ''; editPhotoId = ''; E.fPhoto.value = ''; E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden'); });
-E.searchInput?.addEventListener('input', () => {
+E.clearPhotoBtn.addEventListener('click', () => { editPhoto = ''; E.fPhoto.value = ''; E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden'); });
+E.searchInput.addEventListener('input', () => {
   currentSearch = E.searchInput.value;
   E.clearSearch.style.display = currentSearch ? 'grid' : 'none';
   renderAll();
 });
-E.clearSearch?.addEventListener('click', () => { currentSearch = ''; E.searchInput.value = ''; if (E.clearSearch) E.clearSearch.style.display = 'none'; renderAll(); });
-if (E.clearSearch) E.clearSearch.style.display = 'none';
+E.clearSearch.addEventListener('click', () => { currentSearch = ''; E.searchInput.value = ''; E.clearSearch.style.display = 'none'; renderAll(); });
+E.clearSearch.style.display = 'none';
 $$('.filter-chip', E.filterBar).forEach(b => b.addEventListener('click', () => {
   currentFilter = b.dataset.filter;
   $$('.filter-chip', E.filterBar).forEach(x => x.classList.toggle('active', x.dataset.filter === currentFilter));
   renderAll();
 }));
-E.sortBar?.addEventListener('click', e => {
+E.sortBar.addEventListener('click', e => {
   const b = e.target.closest('[data-sort]'); if (!b) return;
   currentSort = b.dataset.sort;
   $$('.sort-btn').forEach(x => x.classList.toggle('active', x.dataset.sort === currentSort));
   renderAll();
 });
-$$('.nav-item').forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.view === 'more') { openMoreSheet(); return; }
-  setView(b.dataset.view);
-}));
-$$('.more-item', document.getElementById('moreGrid') || document).forEach(b => b.addEventListener('click', () => {
-  closeMoreSheet();
-  setView(b.dataset.view);
-}));
-E.closeShare?.addEventListener('click', closeSheets);
-E.closeImport?.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
-E.createInviteBtn?.addEventListener('click', createAndCopyInvite);
-E.whatsappBtn?.addEventListener('click', async () => {
+$$('.nav-item').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+E.closeShare.addEventListener('click', closeSheets);
+E.closeImport.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
+E.createInviteBtn.addEventListener('click', createAndCopyInvite);
+E.whatsappBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link } = await buildEncryptedInviteLink(a);
   window.open(`https://wa.me/?text=${encodeURIComponent(`DoorKeys : ${a.name}\n${link}`)}`, '_blank', 'noopener noreferrer');
 });
-E.nativeShareBtn?.addEventListener('click', async () => {
+E.nativeShareBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link } = await buildEncryptedInviteLink(a);
   if (navigator.share) try { await navigator.share({ title: 'DoorKeys', text: a.name, url: link }); return; } catch {}
   copyText(link, 'Lien copié');
 });
-[E.shareAddressSelect, E.shareRecipient, E.shareDuration, E.shareAddr, E.shareCode, E.shareFloor, E.shareNotes].filter(Boolean).forEach(el => {
+[E.shareAddressSelect, E.shareRecipient, E.shareDuration, E.shareAddr, E.shareCode, E.shareFloor, E.shareNotes].forEach(el => {
   el.addEventListener('input', refreshSharePreview);
   el.addEventListener('change', refreshSharePreview);
 });
-E.newInviteBtn?.addEventListener('click', () => openShareSheet(''));
-E.importInviteBtn?.addEventListener('click', openImportByPaste);
-E.importConfirmBtn?.addEventListener('click', () => importInvite(pendingInvite));
-E.importCancelBtn?.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
-E.saveWorkspaceBtn?.addEventListener('click', () => { const n = E.settingsWorkspace.value.trim(); if (!n) return toast('Nom vide'); state.workspaceName = n; saveState(); renderAll(); toast('Enregistré'); });
-E.changePinBtn?.addEventListener('click', changePin);
-E.lockFromSettingsBtn?.addEventListener('click', () => lock());
-E.autoLockSelect?.addEventListener('change', () => { state.settings.autoLockMinutes = Number(E.autoLockSelect.value || 0); saveState(); bumpInactivity(); toast('Réglage enregistré'); });
-E.pinnedSelect?.addEventListener('change', () => { state.settings = { ...state.settings, pinnedAddressId: E.pinnedSelect.value }; saveState(); renderQuickBanner(); toast(E.pinnedSelect.value ? 'Accès rapide activé ⚡' : 'Accès rapide désactivé'); });
-E.exportDataBtn?.addEventListener('click', exportBackup);
-E.importDataBtn?.addEventListener('click', () => E.backupFile.click());
-E.backupFile?.addEventListener('change', () => importBackup(E.backupFile.files?.[0]));
-E.resetAllBtn?.addEventListener('click', resetAll);
-E.freqPeriodBar?.addEventListener('click', e => {
+E.newInviteBtn.addEventListener('click', () => openShareSheet(''));
+E.importInviteBtn.addEventListener('click', openImportByPaste);
+E.importConfirmBtn.addEventListener('click', () => importInvite(pendingInvite));
+E.importCancelBtn.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
+E.saveWorkspaceBtn.addEventListener('click', () => { const n = E.settingsWorkspace.value.trim(); if (!n) return toast('Nom vide'); state.workspaceName = n; saveState(); renderAll(); toast('Enregistré'); });
+E.changePinBtn.addEventListener('click', changePin);
+E.lockFromSettingsBtn.addEventListener('click', () => lock());
+E.autoLockSelect.addEventListener('change', () => { state.settings.autoLockMinutes = Number(E.autoLockSelect.value || 0); saveState(); bumpInactivity(); toast('Réglage enregistré'); });
+E.pinnedSelect.addEventListener('change', () => { state.settings = { ...state.settings, pinnedAddressId: E.pinnedSelect.value }; saveState(); renderQuickBanner(); toast(E.pinnedSelect.value ? 'Accès rapide activé ⚡' : 'Accès rapide désactivé'); });
+E.exportDataBtn.addEventListener('click', exportBackup);
+E.importDataBtn.addEventListener('click', () => E.backupFile.click());
+E.backupFile.addEventListener('change', () => importBackup(E.backupFile.files?.[0]));
+E.resetAllBtn.addEventListener('click', resetAll);
+E.freqPeriodBar.addEventListener('click', e => {
   const b = e.target.closest('[data-period]'); if (!b) return;
   freqPeriod = b.dataset.period;
   $$('[data-period]', E.freqPeriodBar).forEach(x => x.classList.toggle('active', x.dataset.period === freqPeriod));
@@ -3452,172 +2830,31 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSheets();
   bumpInactivity();
 });
+let storageIgnore = false;
 window.addEventListener('storage', e => {
   if (storageIgnore || e.key !== KEY) return;
   // Ne pas recharger : l'état chiffré ne peut pas être lu sans la clé en mémoire
 });
 
-// ── MORE SHEET ──
-const moreSheet = document.getElementById('moreSheet');
-function openMoreSheet() {
-  if (!moreSheet) return;
-  moreSheet.classList.add('open');
-  E.backdrop.classList.add('open');
-}
-function closeMoreSheet() {
-  if (!moreSheet) return;
-  moreSheet.classList.remove('open');
-  E.backdrop.classList.remove('open');
-}
-
-// ── GPS DÉTECTION AU DÉVERROUILLAGE ──
-let gpsCheckDone = false;
-function checkGpsProximity() {
-  if (gpsCheckDone || !state.addresses.length) return;
-  gpsCheckDone = true;
-  const withCoords = state.addresses.filter(a => a.lat !== null && a.lng !== null);
-  if (!withCoords.length) return;
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-    const nearby = withCoords
-      .map(a => ({ ...a, dist: haversine(lat, lng, a.lat, a.lng) }))
-      .filter(a => a.dist < 0.25) // < 250m
-      .sort((a, b) => a.dist - b.dist);
-    if (!nearby.length) return;
-    const closest = nearby[0];
-    const gpsEl = document.getElementById('gpsBanner');
-    if (!gpsEl) return;
-    const distStr = closest.dist < 0.1 ? Math.round(closest.dist * 1000) + 'm' : closest.dist.toFixed(2).replace('.', ',') + 'km';
-    let codeShown = false;
-    gpsEl.innerHTML = `<div class="gps-banner-inner">
-      <div class="gps-label"><i class="ti ti-gps" aria-hidden="true"></i> À proximité</div>
-      <div class="gps-addr-name">${closest.emoji || '🏠'} ${esc(closest.name)}</div>
-      <div class="gps-dist">${distStr} · ${esc(closest.address)}</div>
-      <div class="gps-actions">
-        ${closest.code ? `<button class="gps-code-reveal" id="gpsCodeBtn" aria-label="Révéler le digicode">
-          <i class="ti ti-lock-open" aria-hidden="true"></i> <span id="gpsCodeSpan">Révéler le code</span>
-        </button>` : ''}
-        <button class="gps-open-btn" id="gpsOpenBtn" aria-label="Ouvrir la fiche">
-          <i class="ti ti-chevron-right" aria-hidden="true"></i> Fiche complète
-        </button>
-      </div>
-      <button class="gps-dismiss" id="gpsDismiss" aria-label="Fermer la bannière GPS"><i class="ti ti-x" aria-hidden="true"></i></button>
-    </div>`;
-    gpsEl.classList.add('visible');
-    if (closest.code) {
-      document.getElementById('gpsCodeBtn')?.addEventListener('click', () => {
-        const span = document.getElementById('gpsCodeSpan');
-        if (!span) return;
-        if (!codeShown) {
-          span.textContent = closest.code;
-          codeShown = true;
-          navigator.clipboard.writeText(closest.code).catch(() => {});
-          toast('Code copié', 'copied');
-          setTimeout(() => { if (span) { span.textContent = 'Révéler le code'; codeShown = false; } }, 6000);
-        } else {
-          span.textContent = 'Révéler le code';
-          codeShown = false;
-        }
-      });
-    }
-    document.getElementById('gpsOpenBtn')?.addEventListener('click', () => openDetail(closest.id));
-    document.getElementById('gpsDismiss')?.addEventListener('click', () => {
-      gpsEl.classList.remove('visible');
-      setTimeout(() => { gpsEl.innerHTML = ''; }, 450);
-    });
-  }, () => {}, { timeout: 5000, maximumAge: 30000 });
-}
-
-// ── BACKUP REMINDER ──
-const BACKUP_INTERVAL_DAYS = 30;
-function checkBackupReminder() {
-  const last = state.settings?.lastExportAt || 0;
-  const daysSince = (Date.now() - last) / 86400000;
-  const totalAddresses = state.addresses.length;
-  if (totalAddresses === 0) return;
-  if (last === 0 && totalAddresses < 3) return; // pas encore de rappel si peu de données
-  if (last > 0 && daysSince < BACKUP_INTERVAL_DAYS) return;
-  const remEl = document.getElementById('backupReminder');
-  if (!remEl) return;
-  const msg = last === 0
-    ? 'Pense à exporter un backup de tes adresses.'
-    : `Dernier backup il y a ${Math.round(daysSince)} jours. Pense à en faire un nouveau.`;
-  remEl.innerHTML = `<div class="backup-reminder-inner">
-    <i class="ti ti-database-export" aria-hidden="true"></i>
-    <div class="backup-reminder-text">${msg}</div>
-    <button class="backup-reminder-btn" id="backupReminderBtn">Exporter</button>
-    <button style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;margin-left:4px;padding:4px" id="backupDismissBtn" aria-label="Ignorer"><i class="ti ti-x"></i></button>
-  </div>`;
-  remEl.classList.add('visible');
-  document.getElementById('backupReminderBtn')?.addEventListener('click', async () => {
-    await exportBackup();
-    state.settings = { ...state.settings, lastExportAt: Date.now() };
-    saveState();
-    remEl.classList.remove('visible');
-    setTimeout(() => { remEl.innerHTML = ''; }, 450);
-  });
-  document.getElementById('backupDismissBtn')?.addEventListener('click', () => {
-    remEl.classList.remove('visible');
-    setTimeout(() => { remEl.innerHTML = ''; }, 450);
-  });
-}
-
 // ── INIT ──
 async function init() {
-  // 1. Vérifier WebCrypto en tout premier — bloqué sur file:// par les navigateurs modernes
-  if (!crypto?.subtle) {
-    try { document.getElementById('lock').classList.remove('hidden', 'hiding'); } catch(e) {}
-    const noteEl = E.setupBlock?.querySelector?.('.setup-note');
-    if (noteEl) {
-      noteEl.innerHTML = '⚠️ Le chiffrement nécessite HTTPS.<br>'
-        + 'Héberge ce fichier sur <strong>GitHub Pages</strong> pour l\'utiliser.<br>'
-        + '<a href="https://pages.github.com" target="_blank" rel="noopener noreferrer" style="color:var(--gold)">→ pages.github.com</a>';
-    }
-    E.setupBlock?.classList.remove('hidden');
-    E.unlockBlock?.classList.add('hidden');
-    E.setupBtn?.setAttribute('disabled', 'true');
-    return;
-  }
-
-  // 2. Charger security en clair pour que isSetup() soit correct
+  loadLockout();
+  initAutocomplete();
+  // Charger security en clair pour savoir si setup est fait
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const wrapper = JSON.parse(raw);
-      if (wrapper && wrapper.security) state.security = wrapper.security;
+      if (wrapper.security) state.security = wrapper.security;
     }
-  } catch(e) { console.warn('[DK] loadSecurity:', e); }
-
-  // 3. Lockout
-  try { loadLockout(); } catch(e) {}
-
-  // 4. Afficher le lock screen
-  try { document.getElementById('lock').classList.remove('hidden', 'hiding'); } catch(e) {}
-
-  // 5. Setup ou unlock
+  } catch {}
   showSetupOrUnlock();
   if (isSetup()) E.tabUnlock.click(); else E.tabSetup.click();
   if (lockoutUntil > Date.now()) startLockoutTimer();
-
-  try { initAutocomplete(); } catch(e) {}
-
-  try {
-    const inv = inviteFromUrl();
-    if (inv) pendingInvite = inv;
-  } catch(e) {}
+  const inv = inviteFromUrl();
+  if (inv) pendingInvite = inv;
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => init().catch(e => {
-    console.error('[DK init]', e);
-    showCrashOverlay(`Échec au démarrage<br><code style="font-size:11px;color:#e8826a">${String(e?.message || e).slice(0,120)}</code>`);
-  }));
-} else {
-  init().catch(e => {
-    console.error('[DK init]', e);
-    showCrashOverlay(`Échec au démarrage<br><code style="font-size:11px;color:#e8826a">${String(e?.message || e).slice(0,120)}</code>`);
-  });
-}
+init();
 
 })();
 </script>
