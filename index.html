@@ -1675,7 +1675,7 @@ function showSetupOrUnlock() {
 }
 // Dots dynamiques selon longueur réelle du PIN (4-8)
 function renderDots(err = false) {
-  const pinLen = state.security?.pinHash ? 4 : 4; // affiche min 4 dots
+  const pinLen = state.security?.pinLength || 4;
   const displayLen = Math.max(pinLen, pin.length);
   E.pinDots.innerHTML = '';
   for (let i = 0; i < displayLen; i++) {
@@ -1697,7 +1697,7 @@ async function setupSpace() {
     const key = await deriveEncKey(p1, encKeySalt);
     encKey = key;
     state.workspaceName = w;
-    state.security = { salt, pinHash: await hashPin(p1, salt), encKeySalt };
+    state.security = { salt, pinHash: await hashPin(p1, salt), encKeySalt, pinLength: p1.length };
     await saveState();
     unlock();
     toast('Espace créé !', 'success');
@@ -1711,7 +1711,8 @@ async function enterPinDigit(n) {
   if (lockoutUntil > Date.now()) return;
   pin += String(n);
   renderDots(false);
-  if (pin.length >= 4) {
+  const expectedLen = state.security?.pinLength || 4;
+  if (pin.length >= expectedLen) {
     const ok = await verifyPin(pin);
     if (ok) {
       // Dériver la clé de chiffrement et charger l'état
@@ -2780,7 +2781,7 @@ async function changePin() {
   const newSalt = makeSalt(), newEncKeySalt = makeSalt();
   const newKey = await deriveEncKey(norm(n1), newEncKeySalt);
   encKey = newKey;
-  state.security = { salt: newSalt, pinHash: await hashPin(norm(n1), newSalt), encKeySalt: newEncKeySalt };
+  state.security = { salt: newSalt, pinHash: await hashPin(norm(n1), newSalt), encKeySalt: newEncKeySalt, pinLength: norm(n1).length };
   await saveState(); toast('PIN changé ✓', 'success');
 }
 
