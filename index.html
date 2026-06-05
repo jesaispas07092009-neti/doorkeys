@@ -474,12 +474,12 @@ a { color: inherit; text-decoration: none }
 /* ── BACKDROP + SHEETS ── */
 .backdrop {
   position: absolute; inset: 0; background: rgba(0,0,0,.75);
-  opacity: 0; pointer-events: none; transition: .25s; z-index: 60;
+  opacity: 0; pointer-events: none; transition: .25s; z-index: 1000;
   backdrop-filter: blur(4px);
 }
 .backdrop.open { opacity: 1; pointer-events: auto }
 .sheet {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 70;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1010;
   background: var(--bg1); border-top: 1px solid var(--border2);
   border-radius: 28px 28px 0 0; max-height: 92vh;
   transform: translateY(100%); transition: .3s cubic-bezier(.4,0,.2,1);
@@ -780,8 +780,33 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .cat-section-count { font-size: 11px; color: var(--text3); font-family: var(--mono) }
 
 /* ── MAP ── */
-.map-wrap { border-radius: 18px; overflow: hidden; height: calc(100vh - 280px); min-height: 300px }
+.map-wrap { border-radius: 18px; overflow: hidden; height: calc(100vh - 280px); min-height: 300px; position: relative }
 #map { width: 100%; height: 100% }
+.map-locate-btn {
+  position: absolute; bottom: 14px; right: 14px; z-index: 900;
+  width: 40px; height: 40px; border-radius: 12px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  display: grid; place-items: center; font-size: 18px;
+  box-shadow: var(--shadowSm); cursor: pointer; color: var(--text);
+  transition: .15s;
+}
+.map-locate-btn:active { transform: scale(.93) }
+.map-locate-btn.locating { color: var(--blue) }
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: .6 }
+  100% { transform: scale(2.8); opacity: 0  }
+}
+.user-dot-wrap { position: relative; width: 20px; height: 20px }
+.user-dot-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(92,127,255,.4);
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+.user-dot-inner {
+  position: absolute; inset: 3px; border-radius: 50%;
+  background: var(--blue); border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(92,127,255,.6);
+}
 .leaflet-container { background: var(--bg2) }
 .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(.8) saturate(.85) }
 .leaflet-popup-content-wrapper { background: var(--bg2); color: var(--text); border: 1px solid var(--border2); border-radius: 14px; box-shadow: var(--shadowSm) }
@@ -791,7 +816,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 /* ── MODAL ── */
 .modal-overlay {
-  position: absolute; inset: 0; z-index: 400;
+  position: absolute; inset: 0; z-index: 1100;
   background: rgba(0,0,0,.8); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center; padding: 24px;
   opacity: 0; pointer-events: none; transition: .25s;
@@ -1009,7 +1034,12 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
     <!-- Carte -->
     <div class="view" id="view-map">
-      <div class="map-wrap"><div id="map" aria-label="Carte des adresses enregistrées"></div></div>
+      <div class="map-wrap">
+        <div id="map" aria-label="Carte des adresses enregistrées"></div>
+        <button class="map-locate-btn" id="mapLocateBtn" title="Ma position" aria-label="Centrer sur ma position">
+          <i class="ti ti-navigation" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Proximité -->
@@ -1412,7 +1442,7 @@ let unlocked = false, currentView = 'home', currentSort = 'recent',
 let activeId = '', editId = '', editPhoto = '', editCat = 'autre', editEmoji = '🏠';
 let pin = '', inactivityTimer = null, pendingInvite = null;
 let codeRevealTimer = null, revealElId = '';
-let leafletMap = null, mapMarkers = [], mapInitialized = false;
+let leafletMap = null, mapMarkers = [], mapInitialized = false, userLocMarker = null, mapWatchId = null;
 let userLat = null, userLng = null;
 
 let pinAttempts = 0, lockoutUntil = 0, lockoutInterval = null, lockoutStep = 0;
@@ -1838,6 +1868,7 @@ function cardHTML(a) {
 // ── NAVIGATION ──
 const PRIMARY_VIEWS = new Set(['home', 'addresses', 'map']);
 function setView(v) {
+  if (currentView === 'map' && v !== 'map') stopMapWatch();
   currentView = v;
   // Nav items principaux
   $$('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
@@ -2120,21 +2151,64 @@ function renderShares() {
 }
 
 // ── CARTE ──
+function stopMapWatch() {
+  if (mapWatchId !== null) { navigator.geolocation.clearWatch(mapWatchId); mapWatchId = null; }
+}
+function updateUserMarker(lat, lng) {
+  if (typeof L === 'undefined' || !leafletMap) return;
+  const html = '<div class="user-dot-wrap"><div class="user-dot-ring"></div><div class="user-dot-inner"></div></div>';
+  const icon = L.divIcon({ className: '', html, iconSize: [20, 20], iconAnchor: [10, 10] });
+  if (userLocMarker) {
+    userLocMarker.setLatLng([lat, lng]);
+  } else {
+    userLocMarker = L.marker([lat, lng], { icon, zIndexOffset: 500 }).addTo(leafletMap);
+    userLocMarker.bindTooltip('Vous êtes ici', { permanent: false, direction: 'top' });
+  }
+}
+function startMapGeowatch() {
+  if (!navigator.geolocation) return;
+  const btn = $('#mapLocateBtn');
+  mapWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      updateUserMarker(pos.coords.latitude, pos.coords.longitude);
+      if (btn) btn.classList.remove('locating');
+    },
+    () => { if (btn) btn.classList.remove('locating'); },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+  );
+}
 function renderMap() {
   requestAnimationFrame(() => {
     if (!mapInitialized) {
       // Attendre que Leaflet soit chargé (defer)
       if (typeof L === 'undefined') {
-        E.proxContent; // no-op, L chargé via defer
         setTimeout(renderMap, 200); return;
       }
       mapInitialized = true;
       leafletMap = L.map('map', { zoomControl: true, attributionControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(leafletMap);
       leafletMap.setView([48.857, 2.347], 12);
+      // Bouton localiser
+      const btn = $('#mapLocateBtn');
+      if (btn) btn.addEventListener('click', () => {
+        if (!navigator.geolocation) return toast('Géolocalisation non disponible');
+        btn.classList.add('locating');
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            updateUserMarker(pos.coords.latitude, pos.coords.longitude);
+            leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
+            btn.classList.remove('locating');
+          },
+          () => { btn.classList.remove('locating'); toast('Position indisponible'); },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
     }
     setTimeout(() => leafletMap.invalidateSize(), 50);
     refreshMapMarkers();
+    // Démarrer le suivi de position
+    stopMapWatch();
+    startMapGeowatch();
   });
 }
 let mapRenderToken = 0;
