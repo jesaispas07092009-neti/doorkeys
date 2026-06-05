@@ -353,6 +353,17 @@ a { color: inherit; text-decoration: none }
 .onboard-step-text strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px }
 .onboard-step-text span { font-size: 12px; color: var(--text2) }
 
+/* ── SWIPE TO DELETE ── */
+.swipe-wrap { position: relative; overflow: hidden; border-radius: var(--radius); margin-bottom: 10px }
+.swipe-wrap .addr-card { margin-bottom: 0; border-radius: var(--radius); will-change: transform }
+.swipe-del-bg {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+  background: rgba(224,85,85,.15); border-radius: 0 var(--radius) var(--radius) 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--red); font-size: 22px; opacity: 0; transition: opacity .15s; pointer-events: none;
+}
+.swipe-wrap.revealing .swipe-del-bg { opacity: 1 }
+
 /* ── ADDRESS CARD ── */
 .addr-card {
   border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
@@ -443,12 +454,23 @@ a { color: inherit; text-decoration: none }
 }
 .fab:active { transform: scale(.9) }
 
-.subnav {
-  display: flex; border-top: 1px solid var(--border);
-  background: rgba(8,10,14,.88); backdrop-filter: blur(20px);
-  padding: 2px 4px calc(2px + env(safe-area-inset-bottom,0));
-  flex-shrink: 0;
+/* ── MORE SHEET ── */
+.more-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 10px;
+  padding: 16px 18px 8px;
 }
+.more-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 14px 8px; border-radius: var(--radiusSm);
+  background: var(--bg2); border: 1px solid var(--border);
+  cursor: pointer; transition: .15s; text-align: center;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text2);
+  -webkit-user-select: none; user-select: none;
+}
+.more-item i { font-size: 22px }
+.more-item:active { background: var(--bg3); transform: scale(.96) }
+.more-item.active { color: var(--gold); background: var(--goldBg); border-color: var(--goldLine) }
 
 /* ── BACKDROP + SHEETS ── */
 .backdrop {
@@ -924,6 +946,16 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
   <!-- Quick Access Banner -->
   <div id="quickBanner" class="hidden"></div>
+  <!-- Install PWA Banner (shown once) -->
+  <div id="installBanner" class="hidden" style="margin:8px 18px 0;padding:12px 14px;border-radius:14px;background:var(--bg2);border:1px solid var(--goldLine);display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📲</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Installer DoorKeys</div>
+      <div id="installBannerMsg" style="font-size:11px;color:var(--text2);line-height:1.4"></div>
+    </div>
+    <button id="installBannerBtn" class="btn sm" style="flex-shrink:0"></button>
+    <button id="installBannerClose" style="background:none;border:none;color:var(--text3);font-size:18px;padding:4px;line-height:1;flex-shrink:0" aria-label="Fermer">×</button>
+  </div>
 
   <!-- Search + filtres -->
   <div class="search-wrap hidden" id="searchWrap">
@@ -1090,26 +1122,15 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
   </div><!-- /main -->
 
-  <!-- Bottom Nav principal -->
+  <!-- Bottom Nav — 5 items -->
   <nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
     <div class="nav-item active" data-view="home" role="button" tabindex="0" aria-label="Accueil"><i class="ti ti-home" aria-hidden="true"></i>Accueil</div>
     <div class="nav-item" data-view="addresses" role="button" tabindex="0" aria-label="Liste des adresses"><i class="ti ti-list" aria-hidden="true"></i>Liste</div>
-    <div class="nav-item" data-view="map" role="button" tabindex="0" aria-label="Carte"><i class="ti ti-map" aria-hidden="true"></i>Carte</div>
     <div class="nav-fab">
       <button class="fab" id="addBtn" aria-label="Ajouter une adresse"><i class="ti ti-plus" aria-hidden="true"></i></button>
     </div>
-    <div class="nav-item" data-view="favorites" role="button" tabindex="0" aria-label="Favoris"><i class="ti ti-star" aria-hidden="true"></i>Favoris</div>
-    <div class="nav-item" data-view="shares" role="button" tabindex="0" aria-label="Partages"><i class="ti ti-share" aria-hidden="true"></i>Partages</div>
-    <div class="nav-item" data-view="frequency" role="button" tabindex="0" aria-label="Statistiques de fréquence"><i class="ti ti-flame" aria-hidden="true"></i>Stats</div>
-  </nav>
-
-  <!-- Sous-nav -->
-  <nav class="subnav" aria-label="Navigation secondaire">
-    <div class="nav-item" data-view="proximity" style="font-size:8px" role="button" tabindex="0" aria-label="Adresses à proximité"><i class="ti ti-map-pin" style="font-size:18px" aria-hidden="true"></i>Proximité</div>
-    <div class="nav-item" data-view="timeline" style="font-size:8px" role="button" tabindex="0" aria-label="Chronologie"><i class="ti ti-timeline" style="font-size:18px" aria-hidden="true"></i>Timeline</div>
-    <div class="nav-item" data-view="districts" style="font-size:8px" role="button" tabindex="0" aria-label="Quartiers"><i class="ti ti-building" style="font-size:18px" aria-hidden="true"></i>Quartiers</div>
-    <div class="nav-item" data-view="categories" style="font-size:8px" role="button" tabindex="0" aria-label="Catégories"><i class="ti ti-tag" style="font-size:18px" aria-hidden="true"></i>Catégories</div>
-    <div class="nav-item" data-view="settings" style="font-size:8px" role="button" tabindex="0" aria-label="Réglages"><i class="ti ti-settings" style="font-size:18px" aria-hidden="true"></i>Réglages</div>
+    <div class="nav-item" data-view="map" role="button" tabindex="0" aria-label="Carte"><i class="ti ti-map" aria-hidden="true"></i>Carte</div>
+    <div class="nav-item" id="moreNavBtn" role="button" tabindex="0" aria-label="Plus de vues"><i class="ti ti-dots" aria-hidden="true"></i>Plus</div>
   </nav>
 
 </div><!-- /shell -->
@@ -1295,6 +1316,21 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- SHEET: Menu Plus -->
+<div class="sheet" id="moreSheet" role="dialog" aria-modal="true" aria-label="Menu navigation">
+  <div class="handle" aria-hidden="true"></div>
+  <div class="more-grid" id="moreGrid">
+    <div class="more-item" data-view="favorites" role="button" tabindex="0"><i class="ti ti-star" aria-hidden="true"></i>Favoris</div>
+    <div class="more-item" data-view="shares" role="button" tabindex="0"><i class="ti ti-share" aria-hidden="true"></i>Partages</div>
+    <div class="more-item" data-view="frequency" role="button" tabindex="0"><i class="ti ti-flame" aria-hidden="true"></i>Stats</div>
+    <div class="more-item" data-view="proximity" role="button" tabindex="0"><i class="ti ti-map-pin" aria-hidden="true"></i>Proximité</div>
+    <div class="more-item" data-view="timeline" role="button" tabindex="0"><i class="ti ti-timeline" aria-hidden="true"></i>Timeline</div>
+    <div class="more-item" data-view="districts" role="button" tabindex="0"><i class="ti ti-building" aria-hidden="true"></i>Quartiers</div>
+    <div class="more-item" data-view="categories" role="button" tabindex="0"><i class="ti ti-tag" aria-hidden="true"></i>Catégories</div>
+    <div class="more-item" data-view="settings" role="button" tabindex="0"><i class="ti ti-settings" aria-hidden="true"></i>Réglages</div>
+  </div>
+</div>
 </div><!-- /app -->
 
 <!-- Leaflet épinglé @1.9.4 ; defer = non-bloquant -->
@@ -1333,7 +1369,7 @@ const E = {
   addBtn: $('#addBtn'), newInviteBtn: $('#newInviteBtn'), importInviteBtn: $('#importInviteBtn'),
   backdrop: $('#backdrop'), toast: $('#toast'),
   editorSheet: $('#editorSheet'), detailSheet: $('#detailSheet'),
-  shareSheet: $('#shareSheet'), importSheet: $('#importSheet'),
+  shareSheet: $('#shareSheet'), importSheet: $('#importSheet'), moreSheet: $('#moreSheet'),
   editorTitle: $('#editorTitle'), closeEditor: $('#closeEditor'), deleteFromEditor: $('#deleteFromEditor'),
   fId: $('#fId'), fName: $('#fName'), fAddress: $('#fAddress'), fCode: $('#fCode'),
   fFloor: $('#fFloor'), fIntercom: $('#fIntercom'), fDistrict: $('#fDistrict'),
@@ -1384,6 +1420,7 @@ let pinAttempts = 0, lockoutUntil = 0, lockoutInterval = null, lockoutStep = 0;
 let deferredInstallPrompt = null;
 
 let encKey = null;
+let nearbyOverride = null; // adresse détectée par GPS au déverrouillage
 
 // ── CHIFFREMENT AES-GCM (PBKDF2 200k itérations) ──
 async function deriveEncKey(pinStr, saltHex) {
@@ -1595,7 +1632,7 @@ E.modalOverlay.addEventListener('click', e => { if (e.target === E.modalOverlay)
 
 // ── VERROU ──
 function lock() {
-  unlocked = false; encKey = null;
+  unlocked = false; encKey = null; nearbyOverride = null;
   clearTimeout(inactivityTimer);
   pin = '';
   renderDots(false);
@@ -1608,12 +1645,15 @@ function lock() {
 }
 function unlock() {
   unlocked = true;
+  nearbyOverride = null; // reset à chaque déverrouillage
   resetLockout();
   E.lock.classList.add('hiding');
   setTimeout(() => { E.lock.classList.add('hidden'); E.shell.classList.remove('hidden'); }, 500);
   renderAll();
   bumpInactivity();
+  detectNearbyAddress(); // silencieux, met à jour le banner si proche
   if (pendingInvite) setTimeout(() => openInvitePreview(pendingInvite), 600);
+  checkInstallBanner();
 }
 function bumpInactivity() {
   if (!unlocked) return;
@@ -1742,12 +1782,13 @@ function normalizeAddr(a) {
     sharedMeta: a.sharedMeta || null,
     lat: typeof a.lat === 'number' ? a.lat : null,
     lng: typeof a.lng === 'number' ? a.lng : null,
+    visitLog: Array.isArray(a.visitLog) ? a.visitLog.slice(-200) : [],
   };
 }
 function updateAddress(id, patch) { state.addresses = state.addresses.map(a => a.id === id ? normalizeAddr({ ...a, ...patch, updatedAt: Date.now() }) : a); saveState(); }
 function addAddress(data) { const addr = normalizeAddr(data); state.addresses.unshift(addr); saveState(); return addr; }
 function toggleFav(id) { const a = byId(id); if (!a) return; updateAddress(id, { favorite: !a.favorite }); toast(a.favorite ? 'Retiré des favoris' : 'Ajouté aux favoris ⭐'); }
-function markVisit(id) { const a = byId(id); if (!a) return; updateAddress(id, { visits: (a.visits || 0) + 1, lastVisited: Date.now() }); }
+function markVisit(id) { const a = byId(id); if (!a) return; const log = [...(a.visitLog || []), Date.now()].slice(-200); updateAddress(id, { visits: (a.visits || 0) + 1, lastVisited: Date.now(), visitLog: log }); }
 
 // ── FILTRAGE / TRI ──
 function filteredAddresses() {
@@ -1793,9 +1834,16 @@ function cardHTML(a) {
 }
 
 // ── NAVIGATION ──
+const PRIMARY_VIEWS = new Set(['home', 'addresses', 'map']);
 function setView(v) {
   currentView = v;
-  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  // Nav items principaux
+  $$('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  // moreNavBtn actif si vue secondaire
+  const moreBtn = $('#moreNavBtn');
+  if (moreBtn) moreBtn.classList.toggle('active', !PRIMARY_VIEWS.has(v));
+  // moreGrid items
+  $$('.more-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   $$('.view').forEach(vv => vv.classList.remove('active'));
   const vEl = $('#view-' + v); if (vEl) vEl.classList.add('active');
   const showSearch = ['addresses', 'favorites'].includes(v);
@@ -1828,6 +1876,17 @@ function renderHeader() {
   E.statVisit.textContent = last?.lastVisited ? fmtDate(last.lastVisited, false) : '—';
   if (E.settingsWorkspace) E.settingsWorkspace.value = state.workspaceName || '';
   if (E.autoLockSelect) E.autoLockSelect.value = String(state.settings?.autoLockMinutes ?? 2);
+  // Badge backup obsolète (> 30 jours)
+  const lastExport = state.settings?.lastExportAt || 0;
+  const exportBtn = $('#exportDataBtn');
+  if (exportBtn) {
+    const daysSince = (Date.now() - lastExport) / 86400000;
+    if (daysSince > 30) {
+      exportBtn.innerHTML = '<i class="ti ti-database-export" aria-hidden="true"></i> Exporter <span style="margin-left:4px;font-size:10px;background:rgba(224,85,85,.2);border:1px solid rgba(224,85,85,.4);color:var(--red);padding:1px 6px;border-radius:999px">+30j</span>';
+    } else {
+      exportBtn.innerHTML = '<i class="ti ti-database-export" aria-hidden="true"></i> Exporter';
+    }
+  }
   E.pinnedSelect.innerHTML = '<option value="">Aucune</option>' +
     state.addresses.map(a => `<option value="${a.id}"${a.id === state.settings?.pinnedAddressId ? ' selected' : ''}>${esc(a.name)}</option>`).join('');
 }
@@ -1855,11 +1914,30 @@ function renderHome() {
 }
 
 // ── QUICK ACCESS BANNER ──
+function closeMoreSheet() {
+  if (E.moreSheet) {
+    E.moreSheet.classList.remove('open');
+    E.moreSheet.setAttribute('aria-hidden', 'true');
+  }
+  E.backdrop.classList.remove('open');
+  E.backdrop.setAttribute('aria-hidden', 'true');
+}
+
+function openMoreSheet() {
+  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => {
+    if (x) x.classList.remove('open');
+  });
+  E.backdrop.classList.add('open');
+  E.backdrop.setAttribute('aria-hidden', 'false');
+  if (E.moreSheet) { E.moreSheet.classList.add('open'); E.moreSheet.removeAttribute('aria-hidden'); }
+}
+
+
 function renderQuickBanner() {
-  const pid = state.settings?.pinnedAddressId;
-  if (!pid) { E.quickBanner.classList.add('hidden'); return; }
-  const a = byId(pid);
+  // nearbyOverride (GPS < 300m) a la priorité sur l'épinglé
+  const a = nearbyOverride || (state.settings?.pinnedAddressId ? byId(state.settings.pinnedAddressId) : null);
   if (!a) { E.quickBanner.classList.add('hidden'); return; }
+  const isNearby = !!nearbyOverride;
   E.quickBanner.classList.remove('hidden');
   const fields = [];
   if (a.code)    fields.push(`<div class="quick-field code-field" data-qaction="copycode" data-val="${esc(a.code)}" data-id="${a.id}" role="button" tabindex="0" aria-label="Afficher et copier le digicode"><i class="ti ti-lock-open" style="font-size:14px" aria-hidden="true"></i><span class="val masked" id="qc-${a.id}" aria-hidden="true">●●●●</span><div class="copied-flash" id="qcf-${a.id}" aria-hidden="true">Copié ✓</div></div>`);
@@ -1867,7 +1945,7 @@ function renderQuickBanner() {
   if (a.intercom)fields.push(`<div class="quick-field" data-qaction="copyval" data-val="${esc(a.intercom)}" role="button" tabindex="0" aria-label="Copier le code interphone"><i class="ti ti-bell" style="font-size:14px" aria-hidden="true"></i><span class="val">${esc(a.intercom)}</span></div>`);
   if (a.phone)   fields.push(`<a class="quick-field" href="tel:${esc(a.phone)}" style="text-decoration:none" aria-label="Appeler ${esc(a.contact || a.phone)}"><i class="ti ti-phone" style="font-size:14px" aria-hidden="true"></i><span class="val">${esc(a.contact || a.phone)}</span></a>`);
   E.quickBanner.innerHTML = `<div class="quick-banner-inner">
-    <div class="quick-label">⚡ Accès rapide</div>
+    <div class="quick-label">${isNearby ? "📍 À proximité" : "⚡ Accès rapide"}</div>
     <div class="quick-addr-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
     <div class="quick-addr-street">${esc(a.address)}</div>
     <div class="quick-fields">${fields.join('')}</div>
@@ -1895,6 +1973,78 @@ function renderQuickBanner() {
 }
 
 // ── LISTES ──
+function wrapWithSwipe(container) {
+  $$('[data-id]', container).forEach(card => {
+    if (card.closest('.swipe-wrap')) return; // déjà wrappé
+    const wrap = document.createElement('div');
+    wrap.className = 'swipe-wrap';
+    const bg = document.createElement('div');
+    bg.className = 'swipe-del-bg';
+    bg.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i>';
+    card.parentNode.insertBefore(wrap, card);
+    wrap.appendChild(bg);
+    wrap.appendChild(card);
+
+    let startX = 0, curX = 0, dragging = false;
+    card.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX; curX = 0; dragging = false;
+    }, { passive: true });
+    card.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - startX;
+      if (!dragging && Math.abs(dx) < 8) return;
+      dragging = true;
+      curX = Math.max(Math.min(dx, 0), -90);
+      card.style.transform = `translateX(${curX}px)`;
+      wrap.classList.toggle('revealing', curX < -30);
+    }, { passive: true });
+    card.addEventListener('touchend', () => {
+      if (!dragging) return;
+      if (curX < -60) {
+        // Supprimer avec animation
+        card.style.transition = 'transform .22s ease, opacity .22s ease';
+        card.style.transform = 'translateX(-110%)';
+        card.style.opacity = '0';
+        const id = card.dataset.id;
+        const deleted = byId(id);
+        setTimeout(async () => {
+          if (!deleted) { renderAll(); return; }
+          if (state.settings?.pinnedAddressId === id) state.settings = { ...state.settings, pinnedAddressId: '' };
+          if (deleted.photoId) await deletePhoto(deleted.photoId).catch(() => {});
+          state.addresses = state.addresses.filter(x => x.id !== id);
+          state.shares = state.shares.filter(s => s.addressId !== id);
+          await saveState();
+          renderAll();
+          // Toast avec annulation 3s
+          let undone = false;
+          const undo = () => { undone = true; };
+          showUndoToast(`${deleted.name} supprimé`, undo, () => {
+            if (!undone) return;
+            state.addresses.unshift(deleted);
+            state.shares = [...state.shares, ...state.shares.filter(s => s.addressId === id)];
+            saveState(); renderAll(); toast('Restauré ✓');
+          });
+        }, 220);
+      } else {
+        card.style.transition = 'transform .2s cubic-bezier(.34,1.56,.64,1)';
+        card.style.transform = '';
+        wrap.classList.remove('revealing');
+        setTimeout(() => { card.style.transition = ''; }, 200);
+      }
+      curX = 0; dragging = false;
+    });
+  });
+}
+
+let undoToastTimer = null;
+function showUndoToast(msg, onUndoClick, afterTimeout) {
+  const t = E.toast;
+  t.innerHTML = `${msg} <button onclick="this.closest('#toast')._undo()" style="margin-left:8px;background:none;border:none;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;padding:0">Annuler</button>`;
+  t.className = 'toast show';
+  t._undo = () => { clearTimeout(undoToastTimer); t.classList.remove('show'); onUndoClick(); afterTimeout(); };
+  clearTimeout(undoToastTimer);
+  undoToastTimer = setTimeout(() => { t.classList.remove('show'); afterTimeout(); }, 3000);
+}
+
 function attachCardListeners(container) {
   $$('[data-id]', container).forEach(c => {
     const handler = e => {
@@ -2101,6 +2251,17 @@ async function reverseGeocodeDistrict(lat, lng) {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`;
     const data = await fetch(url).then(r => r.json());
     const a = data.address || {};
+    // Extraire arrondissement parisien depuis postcode ou city_district
+    const pc = a.postcode || '';
+    const pcNum = parseInt(pc.slice(-2), 10);
+    if (/^750\d\d$/.test(pc) && pcNum >= 1) return `Paris ${pcNum === 1 ? '1er' : pcNum + 'e'}`;
+    if (/^690\d\d$/.test(pc) && pcNum >= 1) return `Lyon ${pcNum}e`;
+    if (/^130\d\d$/.test(pc) && pcNum >= 1) return `Marseille ${pcNum}e`;
+    // Fallback Nominatim standard
+    if (a.city_district) {
+      const m = a.city_district.match(/(\d+)/);
+      if (m && a.city) return `${a.city} ${parseInt(m[1], 10)}e`;
+    }
     return a.quarter || a.suburb || a.neighbourhood || a.city_district || a.borough || a.city || '';
   } catch { return ''; }
 }
@@ -2117,6 +2278,27 @@ function renderProximity() {
     ()  => { userLat = 48.857; userLng = 2.347; buildProximityList(true); }
   );
 }
+// ── DÉTECTION GPS AU DÉVERROUILLAGE ──
+function detectNearbyAddress() {
+  if (!state.addresses.length) return;
+  const withCoords = state.addresses.filter(a => a.lat !== null && a.lng !== null);
+  if (!withCoords.length) return;
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    let nearest = null, minDist = Infinity;
+    withCoords.forEach(a => {
+      const d = haversine(lat, lng, a.lat, a.lng);
+      if (d < minDist) { minDist = d; nearest = a; }
+    });
+    if (nearest && minDist < 0.3) { // moins de 300m
+      nearbyOverride = nearest;
+      renderQuickBanner();
+    }
+  }, () => {}, { timeout: 4000, maximumAge: 60000, enableHighAccuracy: false });
+}
+
+
 function haversine(a, b, c, d) {
   const R = 6371, dl = (c-a) * Math.PI/180, dn = (d-b) * Math.PI/180;
   const x = Math.sin(dl/2)**2 + Math.cos(a*Math.PI/180) * Math.cos(c*Math.PI/180) * Math.sin(dn/2)**2;
@@ -2167,9 +2349,10 @@ function renderFrequency() {
   const sorted = [...state.addresses]
     .map(a => {
       if (freqPeriod === 'all') return { ...a, periodVisits: a.visits || 0 };
-      // Pour une vraie granularité par période il faudrait un journal; on approche avec lastVisited
-      const inPeriod = a.lastVisited && a.lastVisited >= periodStart;
-      return { ...a, periodVisits: inPeriod ? (a.visits || 0) : 0 };
+      // Comptage réel depuis visitLog
+      const log = a.visitLog || [];
+      const periodVisits = log.filter(ts => ts >= periodStart).length;
+      return { ...a, periodVisits };
     })
     .filter(a => a.periodVisits > 0 || freqPeriod === 'all')
     .sort((a, b) => b.periodVisits - a.periodVisits);
@@ -2601,13 +2784,26 @@ async function changePin() {
   await saveState(); toast('PIN changé ✓', 'success');
 }
 
-function exportBackup() {
-  const { security: _sec, ...safeState } = state; // exclure security
-  const d = JSON.stringify({ ...safeState, exportedAt: Date.now(), appVersion: 'fusion' }, null, 2);
-  const blob = new Blob([d], { type: 'application/json' });
-  const url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = `doorkeys-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
-  URL.revokeObjectURL(url); toast('Sauvegarde exportée', 'success');
+async function exportBackup() {
+  try {
+    const { security: _sec, ...safeState } = state;
+    // Inclure photos depuis IndexedDB
+    const addressesWithPhotos = await Promise.all(safeState.addresses.map(async a => {
+      if (!a.photoId) return a;
+      const photoData = await getPhoto(a.photoId).catch(() => null);
+      return photoData ? { ...a, _photoData: photoData } : a;
+    }));
+    const exportData = { ...safeState, addresses: addressesWithPhotos, exportedAt: Date.now(), appVersion: 'fusion' };
+    const d = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([d], { type: 'application/json' });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = `doorkeys-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+    URL.revokeObjectURL(url);
+    // Mémoriser date du dernier export
+    state.settings = { ...state.settings, lastExportAt: Date.now() };
+    await saveState();
+    toast('Sauvegarde exportée ✓', 'success');
+  } catch(e) { toast('Erreur export'); console.error(e); }
 }
 function importBackup(file) {
   if (!file) return;
@@ -2618,14 +2814,26 @@ function importBackup(file) {
       const ok = await modal({ title: 'Importer', msg: 'Remplacer toutes les données par ce fichier ?', confirmLabel: 'Importer', confirmClass: 'primary' });
       if (!ok) return;
       const base = defaultState();
+      // Restaurer les photos dans IndexedDB depuis _photoData
+      const restoredAddresses = await Promise.all(
+        (Array.isArray(data.addresses) ? data.addresses : []).map(async raw => {
+          const norm = normalizeAddr(raw);
+          if (raw._photoData && typeof raw._photoData === 'string' && raw._photoData.startsWith('data:')) {
+            const newId = uid();
+            await savePhoto(newId, raw._photoData).catch(() => {});
+            return { ...norm, photoId: newId };
+          }
+          return norm;
+        })
+      );
       state = {
         ...base, ...data,
-        security: state.security, // conserver la sécurité existante
+        security: state.security,
         settings: { ...base.settings, ...(data.settings || {}) },
-        addresses: Array.isArray(data.addresses) ? data.addresses.map(normalizeAddr) : [],
+        addresses: restoredAddresses,
         shares: Array.isArray(data.shares) ? data.shares.map(normalizeShare) : [],
       };
-      await saveState(); renderAll(); toast('Import réussi', 'success');
+      await saveState(); renderAll(); toast('Import réussi ✓', 'success');
     } catch { toast('Fichier invalide'); }
   };
   r.readAsText(file);
@@ -2671,14 +2879,14 @@ function compressImage(file) {
 
 // ── SHEETS ──
 function openSheet(s) {
-  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet].forEach(x => x.classList.remove('open'));
+  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => x.classList.remove('open'));
   E.backdrop.classList.add('open');
   s.classList.add('open');
   s.removeAttribute('aria-hidden');
   E.backdrop.setAttribute('aria-hidden', 'false');
 }
 function closeSheets() {
-  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet].forEach(x => { x.classList.remove('open'); x.setAttribute('aria-hidden', 'true'); });
+  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => { x.classList.remove('open'); x.setAttribute('aria-hidden', 'true'); });
   E.backdrop.classList.remove('open');
   E.backdrop.setAttribute('aria-hidden', 'true');
   E.acList.innerHTML = '';
@@ -2688,6 +2896,41 @@ function closeSheets() {
     revealElId = '';
   }
 }
+
+// ── INSTALL BANNER — une seule fois ──
+function checkInstallBanner() {
+  const banner = $('#installBanner');
+  if (!banner) return;
+  if (localStorage.getItem('dk_install_dismissed')) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isIOS && isSafari) {
+    $('#installBannerMsg').textContent = "Safari → partager → « Sur l'écran d'accueil »";
+    $('#installBannerBtn').textContent = 'Comment ?';
+    $('#installBannerBtn').onclick = () => { setView('settings'); closeMoreSheet(); banner.classList.add('hidden'); };
+    banner.classList.remove('hidden');
+  } else if (deferredInstallPrompt) {
+    $('#installBannerMsg').textContent = "Accès hors-ligne, icône sur l\u2019écran d\u2019accueil.";
+    $('#installBannerBtn').textContent = 'Installer';
+    $('#installBannerBtn').onclick = async () => {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      banner.classList.add('hidden');
+    };
+    banner.classList.remove('hidden');
+  }
+  // Fermeture
+  $('#installBannerClose').onclick = () => {
+    banner.classList.add('hidden');
+    localStorage.setItem('dk_install_dismissed', '1');
+  };
+}
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredInstallPrompt = e;
+  if (unlocked) checkInstallBanner();
+});
 
 // ── PWA INSTALL (Service Worker inline via blob) ──
 // Enregistrement SW via blob pour contourner l'absence de fichier externe
@@ -2717,11 +2960,7 @@ async function registerSW() {
 }
 registerSW();
 
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault(); deferredInstallPrompt = e;
-  const btn = $('#installPwaBtn');
-  if (btn) { btn.style.display = 'flex'; $('#pwaStatus').style.display = 'none'; }
-});
+// beforeinstallprompt géré plus haut dans checkInstallBanner
 window.addEventListener('appinstalled', () => {
   toast('DoorKeys installé ✓', 'success');
   const btn = $('#installPwaBtn'); if (btn) btn.style.display = 'none';
@@ -2784,7 +3023,19 @@ E.sortBar.addEventListener('click', e => {
   $$('.sort-btn').forEach(x => x.classList.toggle('active', x.dataset.sort === currentSort));
   renderAll();
 });
-$$('.nav-item').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+$$('.nav-item[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+const moreNavBtn = $('#moreNavBtn');
+if (moreNavBtn) moreNavBtn.addEventListener('click', openMoreSheet);
+$$('.more-item[data-view]', document).forEach(b => b.addEventListener('click', () => {
+  setView(b.dataset.view);
+  // Marquer actif dans moreGrid
+  $$('.more-item').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  // Marquer "Plus" actif dans la navbar
+  $$('.nav-item').forEach(x => x.classList.remove('active'));
+  if (moreNavBtn) moreNavBtn.classList.add('active');
+  closeMoreSheet();
+}));
 E.closeShare.addEventListener('click', closeSheets);
 E.closeImport.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
 E.createInviteBtn.addEventListener('click', createAndCopyInvite);
