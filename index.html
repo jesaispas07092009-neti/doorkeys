@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -3628,15 +3627,18 @@ E.sortBar.addEventListener('click', e => {
 $$('.nav-item[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 const moreNavBtn = $('#moreNavBtn');
 if (moreNavBtn) moreNavBtn.addEventListener('click', openMoreSheet);
-$$('.more-item[data-view]', document).forEach(b => b.addEventListener('click', () => {
-  setView(b.dataset.view);
+$$('.more-item[data-view]', document).forEach(b => b.addEventListener('click', (e) => {
+  e.stopPropagation();
+  // Fermer le sheet EN PREMIER — évite les ghost clicks sur la vue cible (mobile)
+  closeMoreSheet();
   // Marquer actif dans moreGrid
   $$('.more-item').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
   // Marquer "Plus" actif dans la navbar
   $$('.nav-item').forEach(x => x.classList.remove('active'));
   if (moreNavBtn) moreNavBtn.classList.add('active');
-  closeMoreSheet();
+  // Changer de vue après fermeture du sheet
+  setView(b.dataset.view);
 }));
 E.closeShare.addEventListener('click', closeSheets);
 E.closeImport.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
