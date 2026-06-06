@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#080a0e"/>
@@ -14,31 +15,56 @@
   ██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██╗███████╗   ██║   ███████║
   ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝
 
-  VERSION FUSION — Meilleurs éléments de v2, v3, v4 et merged
-  ════════════════════════════════════════════════════════════
+  VERSION FUSION v2 — Correctifs sécurité & accessibilité (audit post-v1)
+  ═══════════════════════════════════════════════════════════════════════
   Base          : v4 (architecture la plus avancée)
   Sécurité      : AES-GCM + PBKDF2 200k iterations (v4)
   Photos        : IndexedDB — hors localStorage quota (v4)
   PWA           : Manifest inline + Service Worker blob (v4)
-  Lockout       : sessionStorage + backoff 30s→2min→10min (v4)
+  Lockout       : localStorage + backoff 30s→2min→10min (v4)
   CSP           : Content-Security-Policy stricte (v4)
   CDN           : Versions épinglées tabler@3.19.0 (v4)
   Invite        : Chiffrement AES-GCM, clé dans fragment # (v4)
   changePin     : Re-chiffrement complet de l'état (v4)
   importBackup  : Conserve le security existant (v4)
-  resetAll      : Vide sessionStorage + IndexedDB (v4)
+  resetAll      : Vide localStorage + IndexedDB (v4)
   UI reveal     : "Toucher pour révéler" + masquage auto 5s (v3+v4)
   Search        : Bouton clear + filter chips (v3+v4)
   Quick banner  : Accès rapide épinglé (v3+v4)
   ARIA          : aria-hidden sur sheets open/close (v4)
   Qualité JPEG  : 0.75 (v2+v4)
   noopener      : noreferrer ajouté partout (v4)
+
+  CORRECTIFS AUDIT (v2)
+  ─────────────────────
+  [CRITIQUE] exportBackup    : chiffré AES-GCM avec la clé du PIN (plus en clair)
+  [CRITIQUE] verifyPin       : comparaison en temps constant via double-HMAC (anti timing-attack)
+  [HAUT]     user-scalable   : supprimé (conformité WCAG 1.4.4)
+  [HAUT]     lockout         : déplacé vers localStorage (contournement par nouvel onglet corrigé)
+  [HAUT]     invite v1       : fallback non chiffré supprimé (forge d'URL impossible)
+  [HAUT]     Service Worker  : versioning CACHE_VERSION + nettoyage des anciens caches
+  [MOYEN]    Nominatim       : User-Agent requis par CGU + cache Map en mémoire
+  [MOYEN]    renderAll       : throttlé via requestAnimationFrame (une passe par frame max)
+  [A11Y]     sheets          : focus trap Tab/Shift-Tab + restauration focus au close
+  [A11Y]     PIN errors      : aria-live="assertive" + région sr-only pour annonce lecteurs d'écran
+
+  CORRECTIFS AUDIT (v3)
+  ─────────────────────
+  [CRITIQUE] exportBackup    : backupSalt désormais utilisé — clé backup dérivée via HKDF (encKey + salt)
+  [CRITIQUE] importBackup    : re-dérive la même clé HKDF depuis parsed.salt avant déchiffrement
+  [HAUT]     storageIgnore   : variable locale ignoreNext supprimée — mécanisme anti-boucle multi-onglets corrigé
+  [HAUT]     swipe undo      : deletedShares capturées avant suppression et réinjectées correctement au undo
+  [HAUT]     Service Worker  : CACHE_VERSION bumped doorkeys-fusion-v2 → doorkeys-fusion-v3
+  [MOYEN]    nominatimCache  : limité à 200 entrées FIFO (évite croissance mémoire illimitée)
+  [A11Y]     modal           : focus trap Tab/Shift-Tab + focus initial sur bouton confirm à l'ouverture
+  [A11Y]     openMoreSheet   : délègue à openSheet() — focus trap + restauration focus au close désormais actifs
 -->
 <!-- CSP corrigée -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; connect-src https://api-adresse.data.gouv.fr https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; img-src 'self' data: https://*.tile.openstreetmap.org blob:; worker-src 'self' blob:; manifest-src 'self' data:"/>
 <!-- PWA Manifest inline -->
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22DoorKeys%22%2C%22short_name%22%3A%22DoorKeys%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23080a0e%22%2C%22theme_color%22%3A%22%23080a0e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%252096%252096%2527%253E%253Crect%2520width%3D%252796%2527%2520height%3D%252796%2527%2520rx%3D%252720%2527%2520fill%3D%2527%2523111520%2527%2F%253E%253Ctext%2520x%3D%252748%2527%2520y%3D%252765%2527%2520text-anchor%3D%2527middle%2527%2520font-size%3D%252750%2527%253E%25E2%258C%2582%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D"/>
-<title>DoorKeys — Fusion</title>
+<title>DoorKeys</title>
+<meta name="description" content="DoorKeys — Ton carnet d'accès privé. Digicodes, étages et interphones, toujours à portée de main."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <!-- CDN épinglées : tabler@3.19.0, leaflet@1.9.4 -->
@@ -352,6 +378,14 @@ a { color: inherit; text-decoration: none }
 .onboard-step-text strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px }
 .onboard-step-text span { font-size: 12px; color: var(--text2) }
 
+/* ── SWIPE HINT ── */
+.swipe-hint {
+  text-align: center; font-size: 11px; color: var(--text3);
+  padding: 6px 0 2px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  animation: fadeSlideUp .4s .5s ease both;
+}
+.swipe-hint i { font-size: 14px }
+
 /* ── SWIPE TO DELETE ── */
 .swipe-wrap { position: relative; overflow: hidden; border-radius: var(--radius); margin-bottom: 10px }
 .swipe-wrap .addr-card { margin-bottom: 0; border-radius: var(--radius); will-change: transform }
@@ -451,6 +485,11 @@ a { color: inherit; text-decoration: none }
   box-shadow: 0 8px 28px rgba(232,213,163,.3);
   transition: .18s cubic-bezier(.34,1.56,.64,1);
 }
+@keyframes fabPulse {
+  0%, 100% { box-shadow: 0 8px 28px rgba(232,213,163,.3), 0 0 0 0 rgba(232,213,163,.4) }
+  50% { box-shadow: 0 8px 28px rgba(232,213,163,.3), 0 0 0 12px rgba(232,213,163,0) }
+}
+.fab.pulse { animation: fabPulse 2s ease-in-out infinite }
 .fab:active { transform: scale(.9) }
 
 /* ── MORE SHEET ── */
@@ -779,6 +818,19 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .cat-section-label { font-size: 14px; font-weight: 700 }
 .cat-section-count { font-size: 11px; color: var(--text3); font-family: var(--mono) }
 
+/* ── MAP LOADER ── */
+.map-loader {
+  position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  background: var(--bg2); border-radius: 18px; color: var(--text2); font-size: 13px;
+}
+.map-loader-spin {
+  width: 32px; height: 32px; border: 3px solid var(--border2);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
 /* ── MAP ── */
 .map-wrap { border-radius: 18px; overflow: hidden; height: calc(100vh - 280px); min-height: 300px; position: relative }
 #map { width: 100%; height: 100% }
@@ -929,9 +981,11 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
   </div>
 
   <div id="unlockBlock" class="hidden">
-    <div id="lockoutBanner" class="lockout-banner hidden" role="alert" aria-live="polite"></div>
+    <div id="lockoutBanner" class="lockout-banner hidden" role="alert" aria-live="assertive"></div>
     <!-- dots générés dynamiquement par JS -->
-    <div class="pin-dots" id="pinDots" aria-label="Saisie PIN" role="status"></div>
+    <div class="pin-dots" id="pinDots" aria-label="Saisie PIN" role="status" aria-live="polite"></div>
+    <!-- Annonce d'erreur PIN pour lecteurs d'écran -->
+    <div id="pinSrAnnounce" aria-live="assertive" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap"></div>
     <div class="numpad" id="numpad" role="group" aria-label="Pavé numérique">
       <button class="key" data-n="1" aria-label="1">1</button>
       <button class="key" data-n="2" aria-label="2 ABC">2<small>ABC</small></button>
@@ -1370,7 +1424,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 // ── CONSTANTES ──
 const KEY         = 'doorkeys_fusion_enc';  // format chiffré AES-GCM
-const LOCKOUT_KEY = 'doorkeys_lockout';      // sessionStorage (non effaçable par localStorage.clear)
+const LOCKOUT_KEY = 'doorkeys_lockout';      // localStorage — persiste entre onglets pour empêcher le contournement
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_STEPS = [30000, 120000, 600000]; 
 
@@ -1387,6 +1441,7 @@ const E = {
   setupWorkspace: $('#setupWorkspace'), setupPin: $('#setupPin'), setupPin2: $('#setupPin2'),
   setupBtn: $('#setupBtn'), pinDots: $('#pinDots'), numpad: $('#numpad'), delBtn: $('#delBtn'),
   lockoutBanner: $('#lockoutBanner'), workspaceInfo: $('#workspaceInfo'),
+  pinSrAnnounce: $('#pinSrAnnounce'),
   lockNowBtn: $('#lockNowBtn'), settingsBtn: $('#settingsBtn'),
   quickBanner: $('#quickBanner'),
   searchWrap: $('#searchWrap'), searchInput: $('#searchInput'), clearSearch: $('#clearSearch'),
@@ -1439,7 +1494,7 @@ const defaultState = () => ({
 let state = defaultState();
 let unlocked = false, currentView = 'home', currentSort = 'recent',
     currentSearch = '', currentFilter = '', freqPeriod = 'all';
-let activeId = '', editId = '', editPhoto = '', editCat = 'autre', editEmoji = '🏠';
+let activeId = '', editId = '', editPhoto = '', editPhotoId = '', editCat = 'autre', editEmoji = '🏠';
 let pin = '', inactivityTimer = null, pendingInvite = null;
 let codeRevealTimer = null, revealElId = '';
 let leafletMap = null, mapMarkers = [], mapInitialized = false, userLocMarker = null, mapWatchId = null;
@@ -1511,9 +1566,9 @@ async function saveState() {
     security: state.security,
     data: await encryptData(encKey, toSave),
   };
-  let ignoreNext = true;
+  storageIgnore = true;
   localStorage.setItem(KEY, JSON.stringify(wrapper));
-  setTimeout(() => { ignoreNext = false; }, 100);
+  setTimeout(() => { storageIgnore = false; }, 100);
   return wrapper;
 }
 function normalizeShare(s) {
@@ -1588,20 +1643,37 @@ function b64dec(t) { const b = atob(String(t).replace(/-/g,'+').replace(/_/g,'/'
 async function digestHex(t) { if (!crypto?.subtle?.digest) throw new Error('WebCrypto requis'); const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join(''); }
 function makeSalt() { const a = new Uint8Array(16); crypto.getRandomValues(a); return [...a].map(b => b.toString(16).padStart(2,'0')).join(''); }
 async function hashPin(p, s) { return digestHex(`${s}:${norm(p)}`); }
-async function verifyPin(p) { if (!state.security?.salt || !state.security?.pinHash) return false; try { return (await hashPin(p, state.security.salt)) === state.security.pinHash; } catch { return false; } }
+async function verifyPin(p) {
+  if (!state.security?.salt || !state.security?.pinHash) return false;
+  try {
+    const computed = await hashPin(p, state.security.salt);
+    // Comparaison en temps constant via HMAC pour éviter les timing attacks
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode(state.security.salt), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const [a, b] = await Promise.all([
+      crypto.subtle.sign('HMAC', key, enc.encode(computed)),
+      crypto.subtle.sign('HMAC', key, enc.encode(state.security.pinHash)),
+    ]);
+    const va = new Uint8Array(a), vb = new Uint8Array(b);
+    let diff = 0;
+    for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+    return diff === 0;
+  } catch { return false; }
+}
 async function copyText(txt, msg = 'Copié') { try { await navigator.clipboard.writeText(txt); } catch {} toast(msg, 'copied'); }
 
-// ── LOCKOUT — sessionStorage + backoff exponentiel ──
+// ── LOCKOUT — localStorage + backoff exponentiel (persiste entre onglets) ──
 function loadLockout() {
   try {
-    const d = JSON.parse(sessionStorage.getItem(LOCKOUT_KEY) || '{}');
+    // localStorage pour que le lockout survive à l'ouverture d'un nouvel onglet
+    const d = JSON.parse(localStorage.getItem(LOCKOUT_KEY) || '{}');
     pinAttempts = d.attempts || 0;
     lockoutUntil = d.until || 0;
     lockoutStep = d.step || 0;
   } catch { pinAttempts = 0; lockoutUntil = 0; lockoutStep = 0; }
 }
 function saveLockout() {
-  sessionStorage.setItem(LOCKOUT_KEY, JSON.stringify({ attempts: pinAttempts, until: lockoutUntil, step: lockoutStep }));
+  localStorage.setItem(LOCKOUT_KEY, JSON.stringify({ attempts: pinAttempts, until: lockoutUntil, step: lockoutStep }));
 }
 function resetLockout() {
   pinAttempts = 0; lockoutUntil = 0; lockoutStep = 0;
@@ -1652,9 +1724,11 @@ function modal({ title = '', msg = '', confirmLabel = 'Confirmer', confirmClass 
     }
     E.modalOverlay.classList.add('open');
     if (hasInput) setTimeout(() => E.modalInput.focus(), 300);
+    else setTimeout(() => E.modalConfirm.focus(), 50);
+    trapFocus(E.modalOverlay);
   });
 }
-function closeModal(r) { E.modalOverlay.classList.remove('open'); if (modalResolve) { modalResolve(r); modalResolve = null; } }
+function closeModal(r) { untrapFocus(E.modalOverlay); E.modalOverlay.classList.remove('open'); if (modalResolve) { modalResolve(r); modalResolve = null; } }
 E.modalCancel.addEventListener('click', () => closeModal(null));
 E.modalConfirm.addEventListener('click', () => { const v = E.modalInput.classList.contains('hidden') ? true : E.modalInput.value; closeModal(v); });
 E.modalOverlay.addEventListener('click', e => { if (e.target === E.modalOverlay) closeModal(null); });
@@ -1674,13 +1748,16 @@ function lock() {
 }
 function unlock() {
   unlocked = true;
-  nearbyOverride = null; // reset à chaque déverrouillage
+  nearbyOverride = null;
   resetLockout();
   E.lock.classList.add('hiding');
-  setTimeout(() => { E.lock.classList.add('hidden'); E.shell.classList.remove('hidden'); }, 500);
+  setTimeout(() => {
+    E.lock.classList.add('hidden');
+    E.shell.classList.remove('hidden');
+    bumpInactivity(); // reset timer APRÈS affichage du shell
+  }, 500);
   renderAll();
-  bumpInactivity();
-  detectNearbyAddress(); // silencieux, met à jour le banner si proche
+  detectNearbyAddress();
   if (pendingInvite) setTimeout(() => openInvitePreview(pendingInvite), 600);
   checkInstallBanner();
 }
@@ -1783,7 +1860,11 @@ async function enterPinDigit(n) {
     } else {
       saveLockout();
       const rem = MAX_ATTEMPTS - pinAttempts;
-      if (rem <= 2) toast(`PIN incorrect — ${rem} essai${rem > 1 ? 's' : ''} restant${rem > 1 ? 's' : ''}`);
+      if (rem <= 2) {
+        const msg = `PIN incorrect — ${rem} essai${rem > 1 ? 's' : ''} restant${rem > 1 ? 's' : ''}`;
+        toast(msg);
+        if (E.pinSrAnnounce) E.pinSrAnnounce.textContent = msg;
+      }
     }
     setTimeout(() => { pin = ''; renderDots(false); E.pinDots.classList.remove('shake'); }, 430);
   }
@@ -1817,8 +1898,8 @@ function normalizeAddr(a) {
     visitLog: Array.isArray(a.visitLog) ? a.visitLog.slice(-200) : [],
   };
 }
-function updateAddress(id, patch) { state.addresses = state.addresses.map(a => a.id === id ? normalizeAddr({ ...a, ...patch, updatedAt: Date.now() }) : a); saveState(); }
-function addAddress(data) { const addr = normalizeAddr(data); state.addresses.unshift(addr); saveState(); return addr; }
+function updateAddress(id, patch) { state.addresses = state.addresses.map(a => a.id === id ? normalizeAddr({ ...a, ...patch, updatedAt: Date.now() }) : a); saveState().catch(() => {}); }
+function addAddress(data) { const addr = normalizeAddr(data); state.addresses.unshift(addr); saveState().catch(() => {}); return addr; }
 function toggleFav(id) { const a = byId(id); if (!a) return; updateAddress(id, { favorite: !a.favorite }); toast(a.favorite ? 'Retiré des favoris' : 'Ajouté aux favoris ⭐'); }
 function markVisit(id) { const a = byId(id); if (!a) return; const log = [...(a.visitLog || []), Date.now()].slice(-200); updateAddress(id, { visits: (a.visits || 0) + 1, lastVisited: Date.now(), visitLog: log }); }
 
@@ -1884,7 +1965,15 @@ function setView(v) {
   E.filterBar.classList.toggle('hidden', !showSearch);
   renderViewContent(v);
 }
-function renderAll() { renderHeader(); renderHome(); renderQuickBanner(); renderViewContent(currentView); }
+let _renderAllPending = false;
+function renderAll() {
+  if (_renderAllPending) return;
+  _renderAllPending = true;
+  requestAnimationFrame(() => {
+    _renderAllPending = false;
+    renderHeader(); renderHome(); renderQuickBanner(); renderViewContent(currentView);
+  });
+}
 function renderViewContent(v) {
   if (v === 'addresses' || v === 'favorites') renderList(v);
   else if (v === 'shares')     renderShares();
@@ -1926,7 +2015,9 @@ function renderHeader() {
 
 // ── HOME ──
 function renderHome() {
+  const fab = $('#addBtn');
   if (state.addresses.length === 0) {
+    if (fab) fab.classList.add('pulse');
     E.homeOnboarding.innerHTML = `<div id="onboarding">
       <div class="onboard-title">Bienvenue 👋</div>
       <div class="onboard-sub">DoorKeys garde tous tes codes d'accès au même endroit, toujours à portée de main.</div>
@@ -1940,6 +2031,7 @@ function renderHome() {
     $('#onboardAdd')?.addEventListener('click', () => openEditor(''));
   } else {
     E.homeOnboarding.innerHTML = '';
+    if (fab) fab.classList.remove('pulse');
   }
   const recent = [...state.addresses].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
   E.homeRecent.innerHTML = recent.length ? recent.map(cardHTML).join('') : '';
@@ -1957,12 +2049,7 @@ function closeMoreSheet() {
 }
 
 function openMoreSheet() {
-  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => {
-    if (x) x.classList.remove('open');
-  });
-  E.backdrop.classList.add('open');
-  E.backdrop.setAttribute('aria-hidden', 'false');
-  if (E.moreSheet) { E.moreSheet.classList.add('open'); E.moreSheet.removeAttribute('aria-hidden'); }
+  openSheet(E.moreSheet);
 }
 
 
@@ -2043,6 +2130,7 @@ function wrapWithSwipe(container) {
           if (!deleted) { renderAll(); return; }
           if (state.settings?.pinnedAddressId === id) state.settings = { ...state.settings, pinnedAddressId: '' };
           if (deleted.photoId) await deletePhoto(deleted.photoId).catch(() => {});
+          const deletedShares = state.shares.filter(s => s.addressId === id);
           state.addresses = state.addresses.filter(x => x.id !== id);
           state.shares = state.shares.filter(s => s.addressId !== id);
           await saveState();
@@ -2053,8 +2141,8 @@ function wrapWithSwipe(container) {
           showUndoToast(`${deleted.name} supprimé`, undo, () => {
             if (!undone) return;
             state.addresses.unshift(deleted);
-            state.shares = [...state.shares, ...state.shares.filter(s => s.addressId === id)];
-            saveState(); renderAll(); toast('Restauré ✓');
+            state.shares = [...state.shares, ...deletedShares];
+            saveState().catch(() => {}); renderAll(); toast('Restauré ✓');
           });
         }, 220);
       } else {
@@ -2115,6 +2203,15 @@ function renderList(view) {
     return cardHTML(a).replace('<div class="addr-card', `<div class="addr-card" style="animation:fadeSlideUp .3s ${delay}s ease both"`);
   }).join('');
   attachCardListeners(list);
+  // Hint swipe — affiché une seule fois
+  if (!localStorage.getItem('dk_swipe_hint_seen') && arr.length >= 1 && view !== 'favorites') {
+    const hint = document.createElement('div');
+    hint.className = 'swipe-hint';
+    hint.innerHTML = '<i class="ti ti-arrow-narrow-left" aria-hidden="true"></i> Glisser pour supprimer';
+    list.appendChild(hint);
+    setTimeout(() => { hint.style.opacity = '0'; hint.style.transition = 'opacity .5s'; setTimeout(() => hint.remove(), 500); }, 3000);
+    localStorage.setItem('dk_swipe_hint_seen', '1');
+  }
 }
 function renderShares() {
   if (!state.shares.length) {
@@ -2146,7 +2243,7 @@ function renderShares() {
     const ok = await modal({ title: 'Révoquer', msg: 'Cette invitation ne fonctionnera plus. Action irréversible.', confirmLabel: 'Révoquer', confirmClass: 'btn danger' });
     if (!ok) return;
     state.shares = state.shares.map(x => x.id === b.dataset.sid ? { ...x, revoked: true } : x);
-    saveState(); renderShares(); toast('Invitation révoquée', 'success');
+    saveState().catch(() => {}); renderShares(); toast('Invitation révoquée', 'success');
   }));
 }
 
@@ -2204,7 +2301,7 @@ function renderMap() {
         );
       });
     }
-    setTimeout(() => leafletMap.invalidateSize(), 50);
+    setTimeout(() => { leafletMap.invalidateSize(); const ml = $('#mapLoader'); if (ml) ml.style.display = 'none'; }, 50);
     refreshMapMarkers();
     // Démarrer le suivi de position
     stopMapWatch();
@@ -2239,11 +2336,15 @@ function addMapMarker(a) {
   mapMarkers.push(m);
   if (mapMarkers.length === 1) leafletMap.setView([a.lat, a.lng], 14);
 }
+const nominatimCache = new Map();
 async function geocodeAddress(address) {
+  if (nominatimCache.has(address)) return nominatimCache.get(address);
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'fr' } }).then(r => r.json());
-  if (!res[0]) return null;
-  return { lat: +res[0].lat, lng: +res[0].lon };
+  const res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'DoorKeys/fusion (self-hosted PWA)' } }).then(r => r.json());
+  const result = res[0] ? { lat: +res[0].lat, lng: +res[0].lon } : null;
+  nominatimCache.set(address, result);
+  if (nominatimCache.size > 200) nominatimCache.delete(nominatimCache.keys().next().value);
+  return result;
 }
 
 // ── AUTOCOMPLÉTION adresse (fallback + gestion erreurs) ──
@@ -2324,8 +2425,10 @@ async function fetchAddressSuggestions(q) {
 }
 async function reverseGeocodeDistrict(lat, lng) {
   try {
+    const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    if (nominatimCache.has(cacheKey)) return nominatimCache.get(cacheKey);
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`;
-    const data = await fetch(url).then(r => r.json());
+    const data = await fetch(url, { headers: { 'User-Agent': 'DoorKeys/fusion (self-hosted PWA)' } }).then(r => r.json());
     const a = data.address || {};
     // Extraire arrondissement parisien depuis postcode ou city_district
     const pc = a.postcode || '';
@@ -2336,9 +2439,12 @@ async function reverseGeocodeDistrict(lat, lng) {
     // Fallback Nominatim standard
     if (a.city_district) {
       const m = a.city_district.match(/(\d+)/);
-      if (m && a.city) return `${a.city} ${parseInt(m[1], 10)}e`;
+      if (m && a.city) { const r = `${a.city} ${parseInt(m[1], 10)}e`; nominatimCache.set(cacheKey, r); if (nominatimCache.size > 200) nominatimCache.delete(nominatimCache.keys().next().value); return r; }
     }
-    return a.quarter || a.suburb || a.neighbourhood || a.city_district || a.borough || a.city || '';
+    const result = a.quarter || a.suburb || a.neighbourhood || a.city_district || a.borough || a.city || '';
+    nominatimCache.set(cacheKey, result);
+    if (nominatimCache.size > 200) nominatimCache.delete(nominatimCache.keys().next().value);
+    return result;
   } catch { return ''; }
 }
 
@@ -2618,7 +2724,7 @@ E.detailInner.addEventListener('click', e => {
   if (act === 'pinDetail') {
     const newPinned = state.settings?.pinnedAddressId === a.id ? '' : a.id;
     state.settings = { ...state.settings, pinnedAddressId: newPinned };
-    saveState(); renderAll(); renderDetail(byId(a.id));
+    saveState().catch(() => {}); renderAll(); renderDetail(byId(a.id));
     toast(newPinned ? 'Épinglé en accès rapide ⚡' : 'Désépinglé'); return;
   }
   if (act === 'revealCode') {
@@ -2629,10 +2735,14 @@ E.detailInner.addEventListener('click', e => {
       el.setAttribute('aria-label', 'Toucher pour révéler le digicode');
       clearTimeout(codeRevealTimer); revealElId = '';
     } else {
-      el.dataset.rev = '1'; el.innerHTML = `<span style="font-family:var(--mono);font-size:15px;letter-spacing:.08em">${esc(a.code)}</span>`;
-      el.setAttribute('aria-label', `Digicode : ${a.code}. Toucher pour masquer`);
+      el.dataset.rev = '1';
+      el.innerHTML = `<span style="font-family:var(--mono);font-size:15px;letter-spacing:.08em">${esc(a.code)}</span><div class="code-timer-bar"><div class="code-timer-fill" id="ctf-${a.id}"></div></div>`;
+      el.setAttribute('aria-label', `Digicode : ${a.code}. Masquage automatique dans 5 secondes`);
+      // Animer la barre
+      const fill = document.getElementById('ctf-' + a.id);
+      if (fill) { fill.style.transitionDuration = '0ms'; fill.style.width = '100%'; requestAnimationFrame(() => { fill.style.transitionDuration = '5000ms'; fill.style.width = '0%'; }); }
       revealElId = el.id; clearTimeout(codeRevealTimer);
-      codeRevealTimer = setTimeout(() => { if (el) { el.innerHTML = '<span class="reveal-hint">Toucher pour révéler</span>'; el.dataset.rev = '0'; } }, 5000);
+      codeRevealTimer = setTimeout(() => { if (el) { el.innerHTML = '<span class="reveal-hint">Toucher pour révéler</span>'; el.dataset.rev = '0'; el.setAttribute('aria-label', 'Toucher pour révéler le digicode'); } }, 5000);
     }
     return;
   }
@@ -2643,14 +2753,14 @@ E.detailInner.addEventListener('click', e => {
       if (a.photoId) await deletePhoto(a.photoId);
       state.addresses = state.addresses.filter(x => x.id !== a.id);
       state.shares = state.shares.filter(s => s.addressId !== a.id);
-      saveState(); closeSheets(); renderAll(); toast('Supprimé');
+      saveState().catch(() => {}); closeSheets(); renderAll(); toast('Supprimé');
     });
   }
 });
 
 // ── ÉDITEUR ──
 function openEditor(id) {
-  editId = id || ''; editPhoto = ''; editCat = 'autre'; editEmoji = '🏠';
+  editId = id || ''; editPhoto = ''; editPhotoId = ''; editCat = 'autre'; editEmoji = '🏠';
   E.editorTitle.textContent = id ? 'Modifier' : 'Nouvelle adresse';
   E.fId.value = id || ''; E.fAddress.dataset.lat = ''; E.fAddress.dataset.lng = '';
   [E.fName, E.fAddress, E.fCode, E.fFloor, E.fIntercom, E.fDistrict, E.fContact, E.fPhone, E.fNotes].forEach(f => f.value = '');
@@ -2662,7 +2772,7 @@ function openEditor(id) {
   E.deleteFromEditor.classList.toggle('hidden', !id);
   if (id) {
     const a = byId(id); if (!a) return;
-    editCat = a.category || 'autre'; editPhoto = a.photoId || ''; editEmoji = a.emoji || '🏠';
+    editCat = a.category || 'autre'; editPhotoId = a.photoId || ''; editPhoto = ''; editEmoji = a.emoji || '🏠';
     E.fName.value = a.name || ''; E.fAddress.value = a.address || '';
     if (a.lat) E.fAddress.dataset.lat = String(a.lat);
     if (a.lng) E.fAddress.dataset.lng = String(a.lng);
@@ -2679,19 +2789,22 @@ function openEditor(id) {
 async function saveEditor() {
   const name = E.fName.value.trim(), addr = E.fAddress.value.trim();
   if (!name || !addr) return toast('Nom et adresse requis');
+  E.saveAddressBtn.disabled = true;
+  E.saveAddressBtn.innerHTML = '<i class="ti ti-loader-2" aria-hidden="true" style="animation:spin .8s linear infinite"></i> Enregistrement…';
   const current = editId ? byId(editId) : null;
   const lat = parseFloat(E.fAddress.dataset.lat) || null, lng = parseFloat(E.fAddress.dataset.lng) || null;
   
-  let photoId = current?.photoId || '';
-  if (editPhoto && editPhoto !== photoId) {
-    // editPhoto est un dataURL si nouvelle photo
+  // editPhotoId = ID IndexedDB existant ; editPhoto = nouveau dataURL choisi par l'utilisateur
+  let photoId = editPhotoId;
+  if (editPhoto) {
+    // Nouvelle photo sélectionnée
     const newId = uid();
     await savePhoto(newId, editPhoto);
-    if (photoId) await deletePhoto(photoId);
+    if (photoId) await deletePhoto(photoId).catch(() => {});
     photoId = newId;
-  } else if (!editPhoto && photoId) {
-    // photo effacée
-    await deletePhoto(photoId);
+  } else if (!editPhotoId && current?.photoId) {
+    // Photo supprimée explicitement via clearPhotoBtn
+    await deletePhoto(current.photoId).catch(() => {});
     photoId = '';
   }
   const data = {
@@ -2713,6 +2826,8 @@ async function saveEditor() {
     });
   }
   if (editId && current) updateAddress(editId, data); else addAddress(data);
+  E.saveAddressBtn.disabled = false;
+  E.saveAddressBtn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Enregistrer';
   closeSheets(); renderAll(); toast(editId ? 'Modifié ✓' : 'Ajouté ✓', 'success');
 }
 $$('.cat-opt').forEach(b => b.addEventListener('click', () => {
@@ -2772,7 +2887,9 @@ function refreshSharePreview() {
   E.sharePreview.innerHTML = `<strong>${esc(a.name)}</strong><div class="small">Champs partagés : ${fields}</div><div class="small" style="color:var(--green)">🔒 Lien chiffré — clé dans le fragment URL</div>`;
 }
 function openShareSheet(id) {
-  if (state.addresses.length === 0) { toast('Aucune adresse à partager'); return; }
+  const fab = $('#addBtn');
+  if (state.addresses.length === 0) {
+    if (fab) fab.classList.add('pulse'); toast('Aucune adresse à partager'); return; }
   E.shareAddressSelect.innerHTML = state.addresses.map(a => `<option value="${a.id}"${a.id === id ? ' selected' : ''}>${esc(a.name)}</option>`).join('');
   E.shareRecipient.value = ''; E.shareAddr.checked = true; E.shareCode.checked = false; E.shareFloor.checked = false; E.shareNotes.checked = false; E.shareDuration.value = '0';
   refreshSharePreview(); openSheet(E.shareSheet);
@@ -2782,19 +2899,18 @@ async function createAndCopyInvite() {
   const { token, link } = await buildEncryptedInviteLink(a);
   const p = buildPayload(a);
   state.shares.push({ id: uid(), addressId: a.id, recipientLabel: p.recipientLabel || 'Invitation', permission: 'view', token, createdAt: Date.now(), expiresAt: p.expiresAt || 0, revoked: false });
-  saveState(); await copyText(link, 'Lien créé & copié'); renderAll(); closeSheets();
+  saveState().catch(() => {}); await copyText(link, 'Lien créé & copié'); renderAll(); closeSheets();
 }
 function inviteFromUrl() {
   const params = new URLSearchParams(location.search);
   const raw = params.get('invite');
   const keyHex = location.hash.startsWith('#k=') ? location.hash.slice(3) : null;
   if (!raw) return null;
-  // Tenter déchiffrement si clé présente, sinon fallback base64 (v1)
+  // Uniquement les invitations v2 chiffrées (clé dans le fragment)
   if (keyHex) {
     return { _enc: true, token: raw, keyHex };
   }
-  // Fallback invitation v1 (non chiffrée, compatibilité)
-  try { const p = JSON.parse(b64dec(decodeURIComponent(raw))); if (p?.kind === 'doorkeys.invite') return p; } catch {}
+  // Les invitations v1 non chiffrées sont rejetées pour éviter les forges d'URL
   return null;
 }
 async function resolveInvite(inv) {
@@ -2834,13 +2950,11 @@ async function openImportByPaste() {
     const url = new URL(raw.includes('?') ? raw : 'https://x.com?' + raw.split('?')[1]);
     const enc = url.searchParams.get('invite');
     const keyHex = url.hash.startsWith('#k=') ? url.hash.slice(3) : null;
-    if (!enc) throw new Error();
-    let p = null;
-    if (keyHex) p = await decryptInviteToken(enc, keyHex);
-    if (!p) { try { p = JSON.parse(b64dec(decodeURIComponent(enc))); } catch {} }
+    if (!enc || !keyHex) throw new Error('Lien sans clé de déchiffrement');
+    const p = await decryptInviteToken(enc, keyHex);
     if (p?.kind === 'doorkeys.invite') { pendingInvite = p; openInvitePreview(p); }
     else throw new Error();
-  } catch { toast('Lien invalide'); }
+  } catch { toast('Lien invalide ou clé manquante'); }
 }
 
 // ── RÉGLAGES ──
@@ -2870,7 +2984,29 @@ async function exportBackup() {
       return photoData ? { ...a, _photoData: photoData } : a;
     }));
     const exportData = { ...safeState, addresses: addressesWithPhotos, exportedAt: Date.now(), appVersion: 'fusion' };
-    const d = JSON.stringify(exportData, null, 2);
+
+    // Chiffrer le backup avec une clé dérivée depuis encKey + backupSalt (HKDF)
+    const backupSalt = makeSalt();
+    const backupIv = crypto.getRandomValues(new Uint8Array(12));
+    const backupPlain = new TextEncoder().encode(JSON.stringify(exportData));
+    const rawEncKey = await crypto.subtle.exportKey('raw', encKey);
+    const hkdfBase = await crypto.subtle.importKey('raw', rawEncKey, { name: 'HKDF' }, false, ['deriveKey']);
+    const backupKey = await crypto.subtle.deriveKey(
+      { name: 'HKDF', hash: 'SHA-256', salt: hexToBytes(backupSalt), info: new TextEncoder().encode('doorkeys-backup') },
+      hkdfBase, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+    );
+    const backupCipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: backupIv }, backupKey, backupPlain);
+    const encBackup = {
+      _encrypted: true,
+      version: 'fusion',
+      hint: 'Chiffré avec ton PIN DoorKeys. Nécessite le même PIN pour l\'importer.',
+      salt: backupSalt,
+      iv: bytesToHex(backupIv),
+      data: bytesToHex(new Uint8Array(backupCipher)),
+      exportedAt: exportData.exportedAt,
+    };
+
+    const d = JSON.stringify(encBackup, null, 2);
     const blob = new Blob([d], { type: 'application/json' });
     const url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = `doorkeys-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -2878,7 +3014,7 @@ async function exportBackup() {
     // Mémoriser date du dernier export
     state.settings = { ...state.settings, lastExportAt: Date.now() };
     await saveState();
-    toast('Sauvegarde exportée ✓', 'success');
+    toast('Sauvegarde chiffrée exportée ✓', 'success');
   } catch(e) { toast('Erreur export'); console.error(e); }
 }
 function importBackup(file) {
@@ -2886,7 +3022,38 @@ function importBackup(file) {
   const r = new FileReader();
   r.onload = async e => {
     try {
-      const data = JSON.parse(String(e.target?.result || ''));
+      const parsed = JSON.parse(String(e.target?.result || ''));
+      let data;
+
+      if (parsed._encrypted === true) {
+        // Backup chiffré : dériver la clé depuis encKey + salt du backup (HKDF), puis déchiffrer
+        try {
+          const iv = hexToBytes(parsed.iv);
+          const cipher = hexToBytes(parsed.data);
+          const rawEncKey = await crypto.subtle.exportKey('raw', encKey);
+          const hkdfBase = await crypto.subtle.importKey('raw', rawEncKey, { name: 'HKDF' }, false, ['deriveKey']);
+          const backupKey = await crypto.subtle.deriveKey(
+            { name: 'HKDF', hash: 'SHA-256', salt: hexToBytes(parsed.salt), info: new TextEncoder().encode('doorkeys-backup') },
+            hkdfBase, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+          );
+          const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, backupKey, cipher);
+          data = JSON.parse(new TextDecoder().decode(plain));
+        } catch {
+          toast('PIN incorrect ou fichier corrompu'); return;
+        }
+      } else if (parsed.addresses || parsed.workspaceName) {
+        // Backup legacy non chiffré : avertir l'utilisateur
+        const proceed = await modal({
+          title: 'Backup non chiffré',
+          msg: '⚠️ Ce fichier de sauvegarde n\'est pas chiffré (ancien format). Les nouvelles sauvegardes sont protégées par ton PIN. Continuer l\'import ?',
+          confirmLabel: 'Importer quand même', confirmClass: 'btn danger',
+        });
+        if (!proceed) return;
+        data = parsed;
+      } else {
+        toast('Fichier invalide'); return;
+      }
+
       const ok = await modal({ title: 'Importer', msg: 'Remplacer toutes les données par ce fichier ?', confirmLabel: 'Importer', confirmClass: 'primary' });
       if (!ok) return;
       const base = defaultState();
@@ -2922,7 +3089,7 @@ function resetAll() {
   }).then(async ok => {
     if (!ok) return;
     localStorage.removeItem(KEY);
-    sessionStorage.removeItem(LOCKOUT_KEY);
+    localStorage.removeItem(LOCKOUT_KEY);
     // Vider IndexedDB
     const db = await openPhotoDB().catch(() => null);
     if (db) { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').clear(); }
@@ -2954,15 +3121,36 @@ function compressImage(file) {
 }
 
 // ── SHEETS ──
+let _preFocusEl = null;
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function trapFocus(sheet) {
+  const els = [...sheet.querySelectorAll(FOCUSABLE)].filter(e => !e.closest('[aria-hidden="true"]'));
+  if (!els.length) return;
+  const first = els[0], last = els[els.length - 1];
+  sheet._trapHandler = e => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+    else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+  };
+  sheet.addEventListener('keydown', sheet._trapHandler);
+  setTimeout(() => first.focus(), 50);
+}
+function untrapFocus(sheet) {
+  if (sheet._trapHandler) { sheet.removeEventListener('keydown', sheet._trapHandler); sheet._trapHandler = null; }
+}
+
 function openSheet(s) {
+  _preFocusEl = document.activeElement;
   [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => x.classList.remove('open'));
   E.backdrop.classList.add('open');
   s.classList.add('open');
   s.removeAttribute('aria-hidden');
   E.backdrop.setAttribute('aria-hidden', 'false');
+  trapFocus(s);
 }
 function closeSheets() {
-  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => { x.classList.remove('open'); x.setAttribute('aria-hidden', 'true'); });
+  [E.editorSheet, E.detailSheet, E.shareSheet, E.importSheet, E.moreSheet].forEach(x => { untrapFocus(x); x.classList.remove('open'); x.setAttribute('aria-hidden', 'true'); });
   E.backdrop.classList.remove('open');
   E.backdrop.setAttribute('aria-hidden', 'true');
   E.acList.innerHTML = '';
@@ -2971,6 +3159,8 @@ function closeSheets() {
     if (el) { el.innerHTML = '<span class="reveal-hint">Toucher pour révéler</span>'; el.dataset.rev = '0'; }
     revealElId = '';
   }
+  // Restaurer le focus à l'élément précédent
+  if (_preFocusEl && typeof _preFocusEl.focus === 'function') { try { _preFocusEl.focus(); } catch {} _preFocusEl = null; }
 }
 
 // ── INSTALL BANNER — une seule fois ──
@@ -3012,16 +3202,25 @@ window.addEventListener('beforeinstallprompt', e => {
 // Enregistrement SW via blob pour contourner l'absence de fichier externe
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
+  const CACHE_VERSION = 'doorkeys-fusion-v3';
   const swCode = `
-    const CACHE = 'doorkeys-fusion-v1';
+    const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
       e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname])));
       self.skipWaiting();
     });
-    self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+    self.addEventListener('activate', e => {
+      // Nettoyer les anciens caches
+      e.waitUntil(
+        caches.keys().then(keys =>
+          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+      );
+    });
     self.addEventListener('fetch', e => {
       if (e.request.method !== 'GET') return;
       e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
+        if (!resp || resp.status !== 200 || resp.type !== 'basic') return resp;
         const clone = resp.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return resp;
@@ -3070,7 +3269,7 @@ E.deleteFromEditor.addEventListener('click', async () => {
   if (a.photoId) await deletePhoto(a.photoId);
   state.addresses = state.addresses.filter(x => x.id !== editId);
   state.shares = state.shares.filter(s => s.addressId !== editId);
-  saveState(); closeSheets(); renderAll(); toast('Supprimé');
+  saveState().catch(() => {}); closeSheets(); renderAll(); toast('Supprimé');
 });
 E.pickPhotoBtn.addEventListener('click', () => E.fPhoto.click());
 E.fPhoto.addEventListener('change', async () => {
@@ -3080,7 +3279,7 @@ E.fPhoto.addEventListener('change', async () => {
   E.clearPhotoBtn.classList.remove('hidden');
   toast('Photo ajoutée');
 });
-E.clearPhotoBtn.addEventListener('click', () => { editPhoto = ''; E.fPhoto.value = ''; E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden'); });
+E.clearPhotoBtn.addEventListener('click', () => { editPhoto = ''; editPhotoId = ''; E.fPhoto.value = ''; E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden'); });
 E.searchInput.addEventListener('input', () => {
   currentSearch = E.searchInput.value;
   E.clearSearch.style.display = currentSearch ? 'grid' : 'none';
@@ -3134,11 +3333,11 @@ E.newInviteBtn.addEventListener('click', () => openShareSheet(''));
 E.importInviteBtn.addEventListener('click', openImportByPaste);
 E.importConfirmBtn.addEventListener('click', () => importInvite(pendingInvite));
 E.importCancelBtn.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
-E.saveWorkspaceBtn.addEventListener('click', () => { const n = E.settingsWorkspace.value.trim(); if (!n) return toast('Nom vide'); state.workspaceName = n; saveState(); renderAll(); toast('Enregistré'); });
+E.saveWorkspaceBtn.addEventListener('click', () => { const n = E.settingsWorkspace.value.trim(); if (!n) return toast('Nom vide'); state.workspaceName = n; saveState().catch(() => {}); renderAll(); toast('Enregistré'); });
 E.changePinBtn.addEventListener('click', changePin);
 E.lockFromSettingsBtn.addEventListener('click', () => lock());
-E.autoLockSelect.addEventListener('change', () => { state.settings.autoLockMinutes = Number(E.autoLockSelect.value || 0); saveState(); bumpInactivity(); toast('Réglage enregistré'); });
-E.pinnedSelect.addEventListener('change', () => { state.settings = { ...state.settings, pinnedAddressId: E.pinnedSelect.value }; saveState(); renderQuickBanner(); toast(E.pinnedSelect.value ? 'Accès rapide activé ⚡' : 'Accès rapide désactivé'); });
+E.autoLockSelect.addEventListener('change', () => { state.settings.autoLockMinutes = Number(E.autoLockSelect.value || 0); saveState().catch(() => {}); bumpInactivity(); toast('Réglage enregistré'); });
+E.pinnedSelect.addEventListener('change', () => { state.settings = { ...state.settings, pinnedAddressId: E.pinnedSelect.value }; saveState().catch(() => {}); renderQuickBanner(); toast(E.pinnedSelect.value ? 'Accès rapide activé ⚡' : 'Accès rapide désactivé'); });
 E.exportDataBtn.addEventListener('click', exportBackup);
 E.importDataBtn.addEventListener('click', () => E.backupFile.click());
 E.backupFile.addEventListener('change', () => importBackup(E.backupFile.files?.[0]));
