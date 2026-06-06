@@ -15,49 +15,44 @@
   ██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██╗███████╗   ██║   ███████║
   ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝
 
-  VERSION FUSION v2 — Correctifs sécurité & accessibilité (audit post-v1)
+  DoorKeys — Carnet d'accès privé
   ═══════════════════════════════════════════════════════════════════════
-  Base          : v4 (architecture la plus avancée)
-  Sécurité      : AES-GCM + PBKDF2 200k iterations (v4)
-  Photos        : IndexedDB — hors localStorage quota (v4)
-  PWA           : Manifest inline + Service Worker blob (v4)
-  Lockout       : localStorage + backoff 30s→2min→10min (v4)
-  CSP           : Content-Security-Policy stricte (v4)
-  CDN           : Versions épinglées tabler@3.19.0 (v4)
-  Invite        : Chiffrement AES-GCM, clé dans fragment # (v4)
-  changePin     : Re-chiffrement complet de l'état (v4)
-  importBackup  : Conserve le security existant (v4)
-  resetAll      : Vide localStorage + IndexedDB (v4)
-  UI reveal     : "Toucher pour révéler" + masquage auto 5s (v3+v4)
-  Search        : Bouton clear + filter chips (v3+v4)
-  Quick banner  : Accès rapide épinglé (v3+v4)
-  ARIA          : aria-hidden sur sheets open/close (v4)
-  Qualité JPEG  : 0.75 (v2+v4)
-  noopener      : noreferrer ajouté partout (v4)
+  Sécurité      : AES-GCM + PBKDF2 200k iterations
+  Photos        : IndexedDB — hors localStorage quota
+  PWA           : Manifest inline + Service Worker blob
+  Lockout       : localStorage + backoff 30s→2min→10min
+  CSP           : Content-Security-Policy stricte
+  CDN           : Versions épinglées tabler@3.19.0
+  Invite        : Chiffrement AES-GCM, clé dans fragment #
+  changePin     : Re-chiffrement complet de l'état
+  importBackup  : Conserve le security existant
+  resetAll      : Vide localStorage + IndexedDB
+  UI reveal     : "Toucher pour révéler" + masquage auto 5s
+  Search        : Bouton clear + filter chips
+  Quick banner  : Accès rapide épinglé
+  ARIA          : aria-hidden sur sheets open/close
+  Qualité JPEG  : 0.75
+  noopener      : noreferrer ajouté partout
 
-  CORRECTIFS AUDIT (v2)
-  ─────────────────────
-  [CRITIQUE] exportBackup    : chiffré AES-GCM avec la clé du PIN (plus en clair)
+  CORRECTIFS SÉCURITÉ & ACCESSIBILITÉ
+  ─────────────────────────────────────
+  [CRITIQUE] exportBackup    : chiffré AES-GCM + clé backup dérivée via HKDF (encKey + salt)
+  [CRITIQUE] importBackup    : re-dérive la même clé HKDF depuis parsed.salt avant déchiffrement
   [CRITIQUE] verifyPin       : comparaison en temps constant via double-HMAC (anti timing-attack)
   [HAUT]     user-scalable   : supprimé (conformité WCAG 1.4.4)
   [HAUT]     lockout         : déplacé vers localStorage (contournement par nouvel onglet corrigé)
-  [HAUT]     invite v1       : fallback non chiffré supprimé (forge d'URL impossible)
+  [HAUT]     invite legacy   : fallback non chiffré supprimé (forge d'URL impossible)
   [HAUT]     Service Worker  : versioning CACHE_VERSION + nettoyage des anciens caches
+  [HAUT]     storageIgnore   : mécanisme anti-boucle multi-onglets corrigé
+  [HAUT]     swipe undo      : deletedShares capturées et réinjectées correctement
+  [HAUT]     partage social  : X/LinkedIn/Messenger désactivés si digicode inclus
   [MOYEN]    Nominatim       : User-Agent requis par CGU + cache Map en mémoire
-  [MOYEN]    renderAll       : throttlé via requestAnimationFrame (une passe par frame max)
+  [MOYEN]    renderAll       : throttlé via requestAnimationFrame
+  [MOYEN]    nominatimCache  : limité à 200 entrées FIFO
   [A11Y]     sheets          : focus trap Tab/Shift-Tab + restauration focus au close
-  [A11Y]     PIN errors      : aria-live="assertive" + région sr-only pour annonce lecteurs d'écran
-
-  CORRECTIFS AUDIT (v3)
-  ─────────────────────
-  [CRITIQUE] exportBackup    : backupSalt désormais utilisé — clé backup dérivée via HKDF (encKey + salt)
-  [CRITIQUE] importBackup    : re-dérive la même clé HKDF depuis parsed.salt avant déchiffrement
-  [HAUT]     storageIgnore   : variable locale ignoreNext supprimée — mécanisme anti-boucle multi-onglets corrigé
-  [HAUT]     swipe undo      : deletedShares capturées avant suppression et réinjectées correctement au undo
-  [HAUT]     Service Worker  : CACHE_VERSION bumped doorkeys-fusion-v2 → doorkeys-fusion-v3
-  [MOYEN]    nominatimCache  : limité à 200 entrées FIFO (évite croissance mémoire illimitée)
-  [A11Y]     modal           : focus trap Tab/Shift-Tab + focus initial sur bouton confirm à l'ouverture
-  [A11Y]     openMoreSheet   : délègue à openSheet() — focus trap + restauration focus au close désormais actifs
+  [A11Y]     PIN errors      : aria-live="assertive" + région sr-only
+  [A11Y]     modal           : focus trap + focus initial sur bouton confirm
+  [A11Y]     openMoreSheet   : focus trap + restauration focus actifs
 -->
 <!-- CSP corrigée -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; connect-src https://api-adresse.data.gouv.fr https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; img-src 'self' data: https://*.tile.openstreetmap.org blob:; worker-src 'self' blob:; manifest-src 'self' data:"/>
@@ -1691,7 +1686,10 @@ const E = {
   shareAddr: $('#shareAddr'), shareCode: $('#shareCode'),
   shareFloor: $('#shareFloor'), shareNotes: $('#shareNotes'),
   shareDuration: $('#shareDuration'), sharePreview: $('#sharePreview'),
-  createInviteBtn: $('#createInviteBtn'), whatsappBtn: $('#whatsappBtn'), nativeShareBtn: $('#nativeShareBtn'),
+  createInviteBtn: $('#createInviteBtn'),
+  whatsappBtn: $('#whatsappBtn'), telegramBtn: $('#telegramBtn'), smsBtn: $('#smsBtn'),
+  emailBtn: $('#emailBtn'), twitterBtn: $('#twitterBtn'), signalBtn: $('#signalBtn'),
+  messengerBtn: $('#messengerBtn'), linkedinBtn: $('#linkedinBtn'), nativeShareBtn: $('#nativeShareBtn'),
   closeShare: $('#closeShare'),
   importPreview: $('#importPreview'), importConfirmBtn: $('#importConfirmBtn'),
   importCancelBtn: $('#importCancelBtn'), closeImport: $('#closeImport'),
@@ -1709,7 +1707,7 @@ const E = {
 
 // ── STATE PAR DÉFAUT ──
 const defaultState = () => ({
-  version: 'fusion',
+  version: 'doorkeys',
   workspaceName: 'Mon espace',
   security: { salt: '', pinHash: '', encKeySalt: '' },
   addresses: [],
@@ -1784,7 +1782,7 @@ async function loadState(pinStr) {
 async function saveState() {
   if (!encKey) return;
   const toSave = {
-    version: state.version, workspaceName: state.workspaceName,
+    version: 'doorkeys', workspaceName: state.workspaceName,
     addresses: state.addresses, shares: state.shares, settings: state.settings,
   };
   
@@ -1863,7 +1861,7 @@ function shareStatus(s) {
   if (s.expiresAt && Date.now() > s.expiresAt) return { label: 'Expirée', cls: 'status-expired' };
   return { label: 'Active', cls: 'status-active' };
 }
-// base64 URL-safe (compat invite v1, chiffrement en AES-GCM)
+// base64 URL-safe (chiffrement AES-GCM)
 function b64enc(t) { const b = new TextEncoder().encode(t); let s = ''; b.forEach(x => s += String.fromCharCode(x)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,''); }
 function b64dec(t) { const b = atob(String(t).replace(/-/g,'+').replace(/_/g,'/')); return new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0))); }
 async function digestHex(t) { if (!crypto?.subtle?.digest) throw new Error('WebCrypto requis'); const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join(''); }
@@ -2573,7 +2571,7 @@ const nominatimCache = new Map();
 async function geocodeAddress(address) {
   if (nominatimCache.has(address)) return nominatimCache.get(address);
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'DoorKeys/fusion (self-hosted PWA)' } }).then(r => r.json());
+  const res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'DoorKeys (self-hosted PWA)' } }).then(r => r.json());
   const result = res[0] ? { lat: +res[0].lat, lng: +res[0].lon } : null;
   nominatimCache.set(address, result);
   if (nominatimCache.size > 200) nominatimCache.delete(nominatimCache.keys().next().value);
@@ -2661,7 +2659,7 @@ async function reverseGeocodeDistrict(lat, lng) {
     const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
     if (nominatimCache.has(cacheKey)) return nominatimCache.get(cacheKey);
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`;
-    const data = await fetch(url, { headers: { 'User-Agent': 'DoorKeys/fusion (self-hosted PWA)' } }).then(r => r.json());
+    const data = await fetch(url, { headers: { 'User-Agent': 'DoorKeys (self-hosted PWA)' } }).then(r => r.json());
     const a = data.address || {};
     // Extraire arrondissement parisien depuis postcode ou city_district
     const pc = a.postcode || '';
@@ -3207,7 +3205,19 @@ function refreshSharePreview() {
   if (!a) { E.sharePreview.innerHTML = 'Choisis une adresse…'; return; }
   const p = buildPayload(a);
   const fields = [p.fields.address ? 'adresse' : null, p.fields.code ? 'code' : null, p.fields.floor ? 'étage' : null, p.fields.notes ? 'notes' : null].filter(Boolean).join(', ') || 'nom seul';
-  E.sharePreview.innerHTML = `<strong>${esc(a.name)}</strong><div class="small">Champs partagés : ${fields}</div><div class="small" style="color:var(--green)">🔒 Lien chiffré — clé dans le fragment URL</div>`;
+  const hasCode = E.shareCode.checked;
+  // Avertissement si le code est partagé
+  const codeWarning = hasCode
+    ? `<div class="small" style="color:var(--gold)">⚠️ Digicode inclus — utilise uniquement WhatsApp, Telegram, SMS, Signal ou E-mail</div>`
+    : '';
+  E.sharePreview.innerHTML = `<strong>${esc(a.name)}</strong><div class="small">Champs partagés : ${fields}</div><div class="small" style="color:var(--green)">🔒 Lien chiffré — clé dans le fragment URL</div>${codeWarning}`;
+  // Désactiver les plateformes risquées (bots de preview) quand le digicode est inclus
+  const riskyBtns = [E.twitterBtn, E.messengerBtn, E.linkedinBtn];
+  riskyBtns.forEach(btn => {
+    btn.disabled = hasCode;
+    btn.style.opacity = hasCode ? '0.35' : '';
+    btn.title = hasCode ? 'Désactivé : X, Messenger et LinkedIn ont des bots qui peuvent lire les liens — ne pas y partager un digicode' : '';
+  });
 }
 function openShareSheet(id) {
   const fab = $('#addBtn');
@@ -3229,11 +3239,11 @@ function inviteFromUrl() {
   const raw = params.get('invite');
   const keyHex = location.hash.startsWith('#k=') ? location.hash.slice(3) : null;
   if (!raw) return null;
-  // Uniquement les invitations v2 chiffrées (clé dans le fragment)
+  // Invitations chiffrées uniquement (clé dans le fragment #k=...)
   if (keyHex) {
     return { _enc: true, token: raw, keyHex };
   }
-  // Les invitations v1 non chiffrées sont rejetées pour éviter les forges d'URL
+  // Les invitations sans clé de déchiffrement sont rejetées (protection contre les forges d'URL)
   return null;
 }
 async function resolveInvite(inv) {
@@ -3315,7 +3325,7 @@ async function exportBackup() {
       const photoData = await getPhoto(a.photoId).catch(() => null);
       return photoData ? { ...a, _photoData: photoData } : a;
     }));
-    const exportData = { ...safeState, addresses: addressesWithPhotos, exportedAt: Date.now(), appVersion: 'fusion' };
+    const exportData = { ...safeState, addresses: addressesWithPhotos, exportedAt: Date.now(), appVersion: 'doorkeys' };
 
     // Chiffrer le backup avec une clé dérivée depuis encKey + backupSalt (HKDF)
     const backupSalt = makeSalt();
@@ -3330,7 +3340,7 @@ async function exportBackup() {
     const backupCipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: backupIv }, backupKey, backupPlain);
     const encBackup = {
       _encrypted: true,
-      version: 'fusion',
+      version: 'doorkeys',
       hint: 'Chiffré avec ton PIN DoorKeys. Nécessite le même PIN pour l\'importer.',
       salt: backupSalt,
       iv: bytesToHex(backupIv),
@@ -3535,7 +3545,7 @@ window.addEventListener('beforeinstallprompt', e => {
 // Enregistrement SW via blob pour contourner l'absence de fichier externe
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  const CACHE_VERSION = 'doorkeys-fusion-v3';
+  const CACHE_VERSION = 'doorkeys';
   const swCode = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
@@ -3661,38 +3671,38 @@ E.whatsappBtn.addEventListener('click', async () => {
   const { text } = await buildShareText(a);
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener noreferrer');
 });
-$('#telegramBtn').addEventListener('click', async () => {
+E.telegramBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link, text } = await buildShareText(a);
   window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('DoorKeys : ' + a.name)}`, '_blank', 'noopener noreferrer');
 });
-$('#smsBtn').addEventListener('click', async () => {
+E.smsBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { text } = await buildShareText(a);
   window.open(`sms:?body=${encodeURIComponent(text)}`, '_self');
 });
-$('#emailBtn').addEventListener('click', async () => {
+E.emailBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link } = await buildShareText(a);
   window.open(`mailto:?subject=${encodeURIComponent('DoorKeys — ' + a.name)}&body=${encodeURIComponent(`Voici les infos d'accès pour ${a.name} :\n\n${link}`)}`, '_self');
 });
-$('#twitterBtn').addEventListener('click', async () => {
+E.twitterBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link } = await buildShareText(a);
   window.open(`https://x.com/intent/tweet?text=${encodeURIComponent('DoorKeys — ' + a.name)}&url=${encodeURIComponent(link)}`, '_blank', 'noopener noreferrer');
 });
-$('#signalBtn').addEventListener('click', async () => {
+E.signalBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { text } = await buildShareText(a);
   window.open(`https://signal.me/#p/${encodeURIComponent(text)}`, '_blank', 'noopener noreferrer');
   copyText(text, 'Lien copié — colle-le dans Signal');
 });
-$('#messengerBtn').addEventListener('click', async () => {
+E.messengerBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link } = await buildShareText(a);
   window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(link)}&redirect_uri=${encodeURIComponent(location.href)}`, '_blank', 'noopener noreferrer');
 });
-$('#linkedinBtn').addEventListener('click', async () => {
+E.linkedinBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { link } = await buildShareText(a);
   window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`, '_blank', 'noopener noreferrer');
