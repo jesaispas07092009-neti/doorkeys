@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -2267,11 +2268,17 @@ function renderHome() {
 // ── QUICK ACCESS BANNER ──
 function closeMoreSheet() {
   if (E.moreSheet) {
+    untrapFocus(E.moreSheet);
     E.moreSheet.classList.remove('open');
     E.moreSheet.setAttribute('aria-hidden', 'true');
   }
   E.backdrop.classList.remove('open');
   E.backdrop.setAttribute('aria-hidden', 'true');
+  // Restaurer le focus sans provoquer de scroll ni de ghost click
+  if (_preFocusEl && typeof _preFocusEl.focus === 'function') {
+    try { _preFocusEl.focus({ preventScroll: true }); } catch {}
+    _preFocusEl = null;
+  }
 }
 
 function openMoreSheet() {
@@ -3460,7 +3467,7 @@ function trapFocus(sheet) {
     else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
   };
   sheet.addEventListener('keydown', sheet._trapHandler);
-  setTimeout(() => first.focus(), 50);
+  setTimeout(() => first.focus({ preventScroll: true }), 50);
 }
 function untrapFocus(sheet) {
   if (sheet._trapHandler) { sheet.removeEventListener('keydown', sheet._trapHandler); sheet._trapHandler = null; }
@@ -3629,16 +3636,17 @@ const moreNavBtn = $('#moreNavBtn');
 if (moreNavBtn) moreNavBtn.addEventListener('click', openMoreSheet);
 $$('.more-item[data-view]', document).forEach(b => b.addEventListener('click', (e) => {
   e.stopPropagation();
-  // Fermer le sheet EN PREMIER — évite les ghost clicks sur la vue cible (mobile)
-  closeMoreSheet();
-  // Marquer actif dans moreGrid
+  const view = b.dataset.view;
+  // Marquer actif dans moreGrid avant fermeture
   $$('.more-item').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
   // Marquer "Plus" actif dans la navbar
   $$('.nav-item').forEach(x => x.classList.remove('active'));
   if (moreNavBtn) moreNavBtn.classList.add('active');
-  // Changer de vue après fermeture du sheet
-  setView(b.dataset.view);
+  // Fermer le sheet EN PREMIER, puis changer de vue dans le prochain frame
+  // (évite ghost clicks et layout jumps sur mobile)
+  closeMoreSheet();
+  requestAnimationFrame(() => setView(view));
 }));
 E.closeShare.addEventListener('click', closeSheets);
 E.closeImport.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
