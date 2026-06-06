@@ -1426,8 +1426,8 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
             Sur <strong style="color:var(--text)">iPhone</strong> : Safari → <i class="ti ti-share" style="font-size:14px" aria-hidden="true"></i> → « Sur l'écran d'accueil »<br>
             Sur <strong style="color:var(--text)">Android</strong> : Chrome → ⋮ → « Ajouter à l'écran d'accueil »
           </div>
-          <button class="btn" id="installPwaBtn" style="display:none" aria-label="Installer DoorKeys comme application"><i class="ti ti-download" aria-hidden="true"></i> Installer</button>
-          <div id="pwaStatus" style="font-size:12px;color:var(--text3)" aria-live="polite">Ouvre cette page dans Safari ou Chrome mobile.</div>
+          <button class="btn" id="installPwaBtn" aria-label="Installer DoorKeys comme application"><i class="ti ti-download" aria-hidden="true"></i> Installer</button>
+          <div id="pwaStatus" style="font-size:12px;color:var(--text3);margin-top:8px" aria-live="polite">Ouvre cette page dans Safari ou Chrome mobile.</div>
         </div>
       </div>
     </div>
@@ -2549,9 +2549,14 @@ function renderMap() {
       leafletMap = L.map('map', { zoomControl: true, attributionControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(leafletMap);
       leafletMap.setView([48.857, 2.347], 12);
-      // Bouton localiser
-      const btn = $('#mapLocateBtn');
-      if (btn) btn.addEventListener('click', () => {
+    }
+    setTimeout(() => { leafletMap.invalidateSize(); const ml = $('#mapLoader'); if (ml) ml.style.display = 'none'; }, 50);
+    refreshMapMarkers();
+    // Réattacher le listener du bouton localiser à chaque render (le DOM peut être rechargé)
+    const btn = $('#mapLocateBtn');
+    if (btn && !btn._locateBound) {
+      btn._locateBound = true;
+      btn.addEventListener('click', () => {
         if (!navigator.geolocation) return toast('Géolocalisation non disponible');
         btn.classList.add('locating');
         navigator.geolocation.getCurrentPosition(
@@ -2565,8 +2570,6 @@ function renderMap() {
         );
       });
     }
-    setTimeout(() => { leafletMap.invalidateSize(); const ml = $('#mapLoader'); if (ml) ml.style.display = 'none'; }, 50);
-    refreshMapMarkers();
     // Démarrer le suivi de position
     stopMapWatch();
     startMapGeowatch();
@@ -3302,6 +3305,7 @@ function openInvitePreview(inv) {
 }
 function importInvite(p) {
   if (!p) return;
+  if (p.expiresAt && Date.now() > p.expiresAt) { toast('Invitation expirée'); pendingInvite = null; closeSheets(); return; }
   const a = p.address || {};
   const exists = state.addresses.find(x => x.address === a.address && x.name === a.name);
   if (exists) { toast('Adresse déjà présente'); closeSheets(); pendingInvite = null; return; }
@@ -3482,6 +3486,7 @@ function compressImage(file) {
     const reader = new FileReader();
     reader.onload = ev => {
       const img = new Image();
+      img.onerror = () => reject(new Error('image load failed'));
       img.onload = () => {
         const MAX = 800; let w = img.width, h = img.height;
         if (w > MAX || h > MAX) {
@@ -3617,11 +3622,24 @@ registerSW();
 // beforeinstallprompt géré plus haut dans checkInstallBanner
 window.addEventListener('appinstalled', () => {
   toast('DoorKeys installé ✓', 'success');
-  const btn = $('#installPwaBtn'); if (btn) btn.style.display = 'none';
+  const btn = $('#installPwaBtn'); if (btn) btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Déjà installée';
   const st = $('#pwaStatus'); if (st) st.textContent = 'Application installée ✓';
 });
 $('#installPwaBtn')?.addEventListener('click', async () => {
-  if (!deferredInstallPrompt) return;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isIOS && isSafari) {
+    toast('Safari → partager → « Sur l\'écran d\'accueil »');
+    return;
+  }
+  if (!deferredInstallPrompt) {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      toast('App déjà installée ✓');
+    } else {
+      toast('Utilise Chrome ou Safari mobile pour installer');
+    }
+    return;
+  }
   deferredInstallPrompt.prompt();
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
