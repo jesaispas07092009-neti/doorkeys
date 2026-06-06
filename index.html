@@ -3884,17 +3884,21 @@ async function bioRegister() {
 
   try {
     const rpId = location.hostname;
+    if (!rpId || rpId === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(rpId)) {
+      toast('Biométrie indisponible en local — utilise GitHub Pages ou un domaine HTTPS');
+      return false;
+    }
     const userId = crypto.getRandomValues(new Uint8Array(16));
 
+    // Note : residentKey et authenticatorAttachment omis pour compatibilité
+    // maximale Android (Pixel 6/7/8, credential manager Android 12+)
     const cred = await navigator.credentials.create({ publicKey: {
       rp: { name: 'DoorKeys', id: rpId },
       user: { id: userId, name: 'doorkeys-user', displayName: 'DoorKeys' },
       challenge: crypto.getRandomValues(new Uint8Array(32)),
       pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
       authenticatorSelection: {
-        authenticatorAttachment: 'platform',
         userVerification: 'required',
-        residentKey: 'preferred',
       },
       timeout: 60000,
       attestation: 'none',
@@ -3907,16 +3911,13 @@ async function bioRegister() {
 
     localStorage.setItem(BIO_CRED_KEY, b64urlEncode(cred.rawId));
     localStorage.setItem(BIO_PIN_KEY, encPin);
-    // La clé AES est stockée en localStorage — elle est protégée par le fait que
-    // le credential WebAuthn (vérif biométrique) est nécessaire pour la valider.
-    // La clé seule sans le credential ne donne rien car on ne peut pas falsifier le signature.
-    // Architecture : biométrie → preuve → on fait confiance → on lit la clé → on déchiffre le PIN
     localStorage.setItem('doorkeys_bio_key', keyB64);
 
     return true;
   } catch (e) {
     if (e.name === 'NotAllowedError') toast('Biométrie annulée');
-    else if (e.name === 'InvalidStateError') toast('Credential déjà enregistré');
+    else if (e.name === 'InvalidStateError') { bioClear(); toast('Réessaie — credential réinitialisé'); }
+    else if (e.name === 'SecurityError') toast('Domaine non autorisé pour la biométrie (HTTPS requis)');
     else toast('Erreur biométrie : ' + e.message);
     return false;
   }
@@ -3967,7 +3968,14 @@ async function bioAuthenticate() {
     unlock();
     return true;
   } catch (e) {
-    if (e.name !== 'NotAllowedError') toast('Biométrie échouée');
+    if (e.name !== 'NotAllowedError') {
+      if (e.message && e.message.includes('credential manager')) {
+        bioClear();
+        toast('Erreur Android — biométrie réinitialisée, réactive-la dans les réglages');
+      } else {
+        toast('Biométrie échouée : ' + (e.message || e.name));
+      }
+    }
     return false;
   } finally {
     btn?.classList.remove('scanning');
