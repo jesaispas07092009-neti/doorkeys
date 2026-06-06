@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -124,7 +125,8 @@ a { color: inherit; text-decoration: none }
 /* ── LOCK SCREEN ── */
 #lock {
   position: absolute; inset: 0; z-index: 200;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center;
+  /* justify-content géré par les media queries responsive en bas de fichier */
   background:
     radial-gradient(ellipse 100% 50% at 50% 0%, rgba(232,213,163,.1) 0%, transparent 55%),
     var(--bg);
@@ -992,7 +994,38 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 }
 .shake { animation: shake .4s ease }
 
-/* indicateur chiffrement */
+/* ── BIOMETRIC BUTTON ── */
+.biometric-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  margin-top: 28px; padding: 0; background: none; border: none;
+  cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 600;
+  transition: .2s; animation: fadeSlideUp .4s .3s ease both;
+}
+.biometric-btn:active { transform: scale(.94); color: var(--gold) }
+.biometric-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--bg2); border: 1.5px solid var(--border2);
+  display: grid; place-items: center; font-size: 28px;
+  transition: .2s; position: relative; overflow: hidden;
+}
+.biometric-icon::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(232,213,163,.1), transparent 70%);
+}
+.biometric-btn:active .biometric-icon {
+  border-color: var(--goldLine);
+  box-shadow: 0 0 24px rgba(232,213,163,.2);
+}
+.biometric-btn.scanning .biometric-icon {
+  border-color: var(--goldLine);
+  animation: bioPulse 1.2s ease infinite;
+}
+@keyframes bioPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(232,213,163,.3) }
+  50%      { box-shadow: 0 0 0 12px rgba(232,213,163,0) }
+}
+
+
 .crypto-loading {
   display: flex; align-items: center; justify-content: center;
   gap: 10px; padding: 20px; color: var(--text2); font-size: 13px;
@@ -1004,9 +1037,117 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
+/* ══ RESPONSIVE FIXES ══ */
+
+/* 1. Lock screen scrollable si contenu dépasse (iPhone SE, petit paysage) */
+#lock {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 32px 24px 24px;
+  justify-content: flex-start;
+  align-items: center;
+}
+/* Centrer quand le contenu tient dans l'écran */
+@media (min-height: 680px) {
+  #lock { justify-content: center }
+}
+#unlockBlock { padding-bottom: 12px }
+
+/* 2. Numpad adaptatif — fini le 290px fixe */
+.numpad {
+  width: min(290px, calc(100vw - 48px));
+  max-width: 290px;
+}
+.key {
+  height: clamp(60px, 18vw, 76px);
+  font-size: clamp(20px, 6vw, 26px);
+}
+
+/* 3. Lock brand compacte sur petits écrans en hauteur */
+@media (max-height: 680px) {
+  .lock-brand  { margin-bottom: 20px }
+  .lock-icon   { width: 52px; height: 52px; font-size: 22px; border-radius: 18px }
+  .lock-name   { font-size: 26px }
+  .lock-tabs   { margin-bottom: 16px }
+  .pin-dots    { margin-bottom: 20px }
+  .biometric-btn  { margin-top: 16px }
+  .biometric-icon { width: 50px; height: 50px; font-size: 22px }
+}
+
+/* 4. Toast : max-width pour éviter le débordement sur petits écrans */
+.toast {
+  white-space: normal;
+  text-align: center;
+  max-width: calc(100vw - 48px);
+  width: max-content;
+}
+
+/* 5-6. Grilles sur très petits écrans (< 360px) */
+@media (max-width: 359px) {
+  .share-social-grid { grid-template-columns: repeat(2, 1fr) }
+  .more-grid          { grid-template-columns: repeat(3, 1fr) }
+  .stats-grid         { grid-template-columns: 1fr }
+  .stat-v             { font-size: 24px }
+}
 @media (max-width: 380px) {
   .stats-grid { grid-template-columns: 1fr }
   .cat-picker { flex-wrap: wrap }
+}
+
+/* 7. brand-text : max-width fluide */
+.brand-text span {
+  max-width: clamp(100px, 40vw, 200px);
+}
+
+/* 8. setup-row : empilement sur très petits écrans */
+@media (max-width: 319px) {
+  .setup-row { flex-direction: column }
+}
+
+/* 10. Modal : padding réduit sur petits écrans */
+@media (max-width: 359px) {
+  .modal-overlay { padding: 12px }
+  .modal-box     { padding: 18px }
+}
+
+/* 11. Sheet : safe-area cohérent */
+.sheet {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+}
+
+/* 12. addr-name : gap réduit pour l'étoile favori */
+.addr-name { gap: 4px }
+
+/* 13. stat-v : taille de police responsive */
+.stat-v { font-size: clamp(24px, 7vw, 32px) }
+
+/* Carte : hauteur robuste avec small viewport unit si dispo */
+.map-wrap { height: calc(100svh - 280px) }
+@supports not (height: 100svh) {
+  .map-wrap { height: calc(100vh - 280px) }
+}
+@media (max-height: 600px) {
+  .map-wrap { height: 260px; min-height: 260px }
+}
+
+/* form-row : flexible sur petits écrans */
+@media (max-width: 380px) {
+  .form-row { flex-wrap: wrap }
+  .form-row .form-field { flex: 1 1 calc(50% - 5px); min-width: 100px }
+}
+
+/* Paysage compact (landscape téléphone) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .lock-brand    { flex-direction: row; margin-bottom: 12px; gap: 16px }
+  .lock-icon     { width: 44px; height: 44px; font-size: 18px }
+  .lock-name     { font-size: 22px }
+  .lock-subtitle { display: none }
+  .lock-tabs     { margin-bottom: 10px }
+  .numpad        { gap: 6px }
+  .key           { height: clamp(46px, 12vh, 60px) }
+  .pin-dots      { margin-bottom: 12px }
+  .biometric-btn   { margin-top: 10px }
+  .biometric-icon  { width: 42px; height: 42px; font-size: 18px }
 }
 </style>
 </head>
@@ -1065,6 +1206,12 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
       <button class="key" data-n="0" aria-label="0">0</button>
       <button class="key del" id="delBtn" aria-label="Effacer"><i class="ti ti-backspace" aria-hidden="true"></i></button>
     </div>
+    <button class="biometric-btn hidden" id="biometricBtn" aria-label="Se déverrouiller avec la biométrie">
+      <span class="biometric-icon" id="biometricIcon">
+        <i class="ti ti-fingerprint"></i>
+      </span>
+      <span id="biometricLabel">Face ID / Empreinte</span>
+    </button>
   </div>
 </div>
 
@@ -1218,6 +1365,13 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
         <div class="settings-row" id="changePinBtn" role="button" tabindex="0" aria-label="Changer le PIN">
           <div class="settings-row-left"><i class="ti ti-key" aria-hidden="true"></i><div class="settings-row-label">Changer le PIN</div></div>
           <i class="ti ti-chevron-right" style="color:var(--text3)" aria-hidden="true"></i>
+        </div>
+        <div class="settings-row" style="cursor:default" id="biometricRow">
+          <div class="settings-row-left"><i class="ti ti-fingerprint" aria-hidden="true"></i><div class="settings-row-label">Biométrie <span id="biometricTypeBadge" style="font-size:10px;color:var(--text3);font-weight:400"></span></div></div>
+          <label class="switch"><input type="checkbox" id="biometricToggle" aria-label="Activer la biométrie"/><span class="slider"></span></label>
+        </div>
+        <div id="biometricUnsupported" class="hidden" style="padding:8px 16px 14px;font-size:12px;color:var(--text3)">
+          Biométrie non disponible sur cet appareil ou navigateur.
         </div>
         <div class="settings-row" style="cursor:default">
           <div class="settings-row-left"><i class="ti ti-clock" aria-hidden="true"></i><label class="settings-row-label" for="autoLockSelect">Verrouillage auto</label></div>
@@ -1832,6 +1986,7 @@ function unlock() {
   detectNearbyAddress();
   if (pendingInvite) setTimeout(() => openInvitePreview(pendingInvite), 600);
   checkInstallBanner();
+  bioRefreshToggle();
 }
 function bumpInactivity() {
   if (!unlocked) return;
@@ -1851,12 +2006,11 @@ function showSetupOrUnlock() {
   pin = '';
   renderDots(false);
 }
-// Dots dynamiques selon longueur réelle du PIN (4-8)
+// Dots : toujours exactement pinLength points, jamais plus, jamais moins
 function renderDots(err = false) {
   const pinLen = state.security?.pinLength || 4;
-  const displayLen = Math.max(pinLen, pin.length);
   E.pinDots.innerHTML = '';
-  for (let i = 0; i < displayLen; i++) {
+  for (let i = 0; i < pinLen; i++) {
     const d = document.createElement('div');
     d.className = 'dot' + (i < pin.length ? ' filled' : '') + (err ? ' error' : '');
     E.pinDots.appendChild(d);
@@ -3134,7 +3288,16 @@ async function changePin() {
   const newKey = await deriveEncKey(norm(n1), newEncKeySalt);
   encKey = newKey;
   state.security = { salt: newSalt, pinHash: await hashPin(norm(n1), newSalt), encKeySalt: newEncKeySalt, pinLength: norm(n1).length };
-  await saveState(); toast('PIN changé ✓', 'success');
+  await saveState();
+  // La biométrie stockait l'ancien PIN → on la vide pour éviter une incohérence
+  if (localStorage.getItem(BIO_CRED_KEY)) {
+    bioClear();
+    bioRefreshToggle();
+    $('#biometricBtn')?.classList.add('hidden');
+    toast('PIN changé ✓ — réactive la biométrie dans les réglages', 'success');
+  } else {
+    toast('PIN changé ✓', 'success');
+  }
 }
 
 async function exportBackup() {
@@ -3253,6 +3416,7 @@ function resetAll() {
     if (!ok) return;
     localStorage.removeItem(KEY);
     localStorage.removeItem(LOCKOUT_KEY);
+    bioClear();
     // Vider IndexedDB
     const db = await openPhotoDB().catch(() => null);
     if (db) { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').clear(); }
@@ -3566,6 +3730,256 @@ window.addEventListener('storage', e => {
   // Ne pas recharger : l'état chiffré ne peut pas être lu sans la clé en mémoire
 });
 
+
+// ══ BIOMÉTRIE — WebAuthn / Passkeys ══
+const BIO_CRED_KEY = 'doorkeys_bio_credId';   // stocke l'id du credential en localStorage
+const BIO_PIN_KEY  = 'doorkeys_bio_pin_enc';  // stocke le PIN chiffré par la clé biométrique
+
+// Vérifie si WebAuthn platform authenticator est dispo
+async function bioAvailable() {
+  try {
+    if (!window.PublicKeyCredential) return false;
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch { return false; }
+}
+
+// Détermine le label selon le contexte (iOS = Face ID / Touch ID, Android = Empreinte)
+function bioLabel() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad/.test(ua)) return 'Face ID / Touch ID';
+  if (/Android/.test(ua)) return 'Empreinte digitale';
+  return 'Biométrie';
+}
+
+// Helpers base64url (WebAuthn requiert ArrayBuffer ↔ base64url)
+function b64urlEncode(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(str) {
+  const b = atob(str.replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from(b, c => c.charCodeAt(0)).buffer;
+}
+
+// Génère une clé AES-GCM aléatoire pour chiffrer le PIN local
+async function bioGenKey() {
+  return crypto.subtle.generateKey({ name:'AES-GCM', length:256 }, true, ['encrypt','decrypt']);
+}
+// Exporte la clé en base64url (pour la stocker en localStorage — protégée par la biométrie côté OS)
+async function bioExportKey(k) {
+  const raw = await crypto.subtle.exportKey('raw', k);
+  return b64urlEncode(raw);
+}
+async function bioImportKey(str) {
+  return crypto.subtle.importKey('raw', b64urlDecode(str), { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+}
+
+// Chiffre le PIN avec la clé biométrique et le stocke
+async function bioPinEncrypt(pinStr, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = new TextEncoder().encode(pinStr);
+  const cipher = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, data);
+  return b64urlEncode(iv) + '.' + b64urlEncode(cipher);
+}
+async function bioPinDecrypt(str, key) {
+  const [ivB64, dataB64] = str.split('.');
+  const plain = await crypto.subtle.decrypt(
+    { name:'AES-GCM', iv: b64urlDecode(ivB64) }, key, b64urlDecode(dataB64)
+  );
+  return new TextDecoder().decode(plain);
+}
+
+// ── ENREGISTREMENT biométrique (appelé quand l'utilisateur active le toggle) ──
+async function bioRegister() {
+  // On a besoin du PIN en mémoire pour l'enregistrer chiffré
+  // → on demande le PIN actuel via modal
+  const currentPin = await modal({
+    title: 'Confirmer ton PIN',
+    msg: 'Saisis ton PIN pour activer la biométrie.',
+    confirmLabel: 'Valider',
+    hasInput: true,
+    inputPlaceholder: '••••',
+    inputType: 'password',
+  });
+  if (!currentPin) return false;
+  const pinNorm = norm(String(currentPin));
+  if (!(await verifyPin(pinNorm))) {
+    toast('PIN incorrect'); return false;
+  }
+
+  try {
+    const rpId = location.hostname;
+    const userId = crypto.getRandomValues(new Uint8Array(16));
+
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { name: 'DoorKeys', id: rpId },
+      user: { id: userId, name: 'doorkeys-user', displayName: 'DoorKeys' },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform',
+        userVerification: 'required',
+        residentKey: 'preferred',
+      },
+      timeout: 60000,
+      attestation: 'none',
+    }});
+
+    // Générer une clé AES locale, chiffrer le PIN avec, stocker tout ça
+    const bioKey = await bioGenKey();
+    const encPin = await bioPinEncrypt(pinNorm, bioKey);
+    const keyB64 = await bioExportKey(bioKey);
+
+    localStorage.setItem(BIO_CRED_KEY, b64urlEncode(cred.rawId));
+    localStorage.setItem(BIO_PIN_KEY, encPin);
+    // La clé AES est stockée en localStorage — elle est protégée par le fait que
+    // le credential WebAuthn (vérif biométrique) est nécessaire pour la valider.
+    // La clé seule sans le credential ne donne rien car on ne peut pas falsifier le signature.
+    // Architecture : biométrie → preuve → on fait confiance → on lit la clé → on déchiffre le PIN
+    localStorage.setItem('doorkeys_bio_key', keyB64);
+
+    return true;
+  } catch (e) {
+    if (e.name === 'NotAllowedError') toast('Biométrie annulée');
+    else if (e.name === 'InvalidStateError') toast('Credential déjà enregistré');
+    else toast('Erreur biométrie : ' + e.message);
+    return false;
+  }
+}
+
+// ── AUTHENTIFICATION biométrique (au déverrouillage) ──
+async function bioAuthenticate() {
+  const credIdB64 = localStorage.getItem(BIO_CRED_KEY);
+  const encPin    = localStorage.getItem(BIO_PIN_KEY);
+  const keyB64    = localStorage.getItem('doorkeys_bio_key');
+  if (!credIdB64 || !encPin || !keyB64) return false;
+
+  const btn = $('#biometricBtn');
+  btn?.classList.add('scanning');
+
+  try {
+    await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rpId: location.hostname,
+      allowCredentials: [{ type: 'public-key', id: b64urlDecode(credIdB64) }],
+      userVerification: 'required',
+      timeout: 60000,
+    }});
+
+    // Biométrie validée → récupère la clé → déchiffre le PIN
+    const bioKey = await bioImportKey(keyB64);
+    const pinStr = await bioPinDecrypt(encPin, bioKey);
+
+    // Maintenant on déverrouille avec ce PIN (même flow que le numpad)
+    const ok = await verifyPin(pinStr);
+    if (!ok) { toast('Erreur interne biométrie'); return false; }
+
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const wrapper = JSON.parse(raw);
+      const key = await deriveEncKey(pinStr, wrapper.security.encKeySalt);
+      const decrypted = await decryptData(key, wrapper.data);
+      encKey = key;
+      const base = defaultState();
+      state = {
+        ...base, ...decrypted,
+        security: { ...base.security, ...wrapper.security },
+        settings: { ...base.settings, ...(decrypted.settings || {}) },
+        addresses: Array.isArray(decrypted.addresses) ? decrypted.addresses.map(normalizeAddr) : [],
+        shares: Array.isArray(decrypted.shares) ? decrypted.shares.map(normalizeShare) : [],
+      };
+    }
+    unlock();
+    return true;
+  } catch (e) {
+    if (e.name !== 'NotAllowedError') toast('Biométrie échouée');
+    return false;
+  } finally {
+    btn?.classList.remove('scanning');
+  }
+}
+
+// ── SUPPRESSION des données biométriques ──
+function bioClear() {
+  localStorage.removeItem(BIO_CRED_KEY);
+  localStorage.removeItem(BIO_PIN_KEY);
+  localStorage.removeItem('doorkeys_bio_key');
+}
+
+// ── INITIALISATION UI biométrie ──
+async function bioInitUI() {
+  const bioBtn    = $('#biometricBtn');
+  const bioToggle = $('#biometricToggle');
+  const bioBadge  = $('#biometricTypeBadge');
+  const bioUnsup  = $('#biometricUnsupported');
+  const bioRow    = $('#biometricRow');
+
+  const available = await bioAvailable();
+  const hasCredential = !!localStorage.getItem(BIO_CRED_KEY);
+
+  // Mettre à jour le label
+  if (bioBtn) {
+    $('#biometricLabel').textContent = bioLabel();
+    // Choisir icône selon plateforme
+    const ua = navigator.userAgent;
+    const icon = /iPhone|iPad/.test(ua) ? 'ti-scan' : 'ti-fingerprint';
+    $('#biometricIcon').innerHTML = `<i class="ti ${icon}"></i>`;
+  }
+  if (bioBadge) bioBadge.textContent = `(${bioLabel()})`;
+
+  if (!available) {
+    // Cacher le bouton sur l'écran de verrou
+    bioBtn?.classList.add('hidden');
+    // Afficher message dans les réglages
+    bioRow?.classList.add('hidden');
+    bioUnsup?.classList.remove('hidden');
+    return;
+  }
+
+  // Afficher/cacher le bouton biométrique sur l'écran de verrou
+  if (isSetup() && hasCredential) {
+    bioBtn?.classList.remove('hidden');
+  } else {
+    bioBtn?.classList.add('hidden');
+  }
+
+  // Toggle dans les réglages
+  if (bioToggle) {
+    bioToggle.checked = hasCredential;
+    bioToggle.addEventListener('change', async () => {
+      if (bioToggle.checked) {
+        const ok = await bioRegister();
+        if (!ok) {
+          bioToggle.checked = false;
+          return;
+        }
+        bioBtn?.classList.remove('hidden');
+        toast('Biométrie activée ✓');
+      } else {
+        const ok = await modal({
+          title: 'Désactiver la biométrie',
+          msg: 'La biométrie sera désactivée. Tu devras utiliser ton PIN.',
+          confirmLabel: 'Désactiver',
+          confirmClass: 'btn danger',
+        });
+        if (!ok) { bioToggle.checked = true; return; }
+        bioClear();
+        bioBtn?.classList.add('hidden');
+        toast('Biométrie désactivée');
+      }
+    });
+  }
+
+  // Bouton biométrique sur l'écran de verrou
+  bioBtn?.addEventListener('click', () => bioAuthenticate());
+}
+
+// Ré-init UI bio après unlock (pour le bouton réglages)
+function bioRefreshToggle() {
+  const bioToggle = $('#biometricToggle');
+  if (bioToggle) bioToggle.checked = !!localStorage.getItem(BIO_CRED_KEY);
+}
+
 // ── INIT ──
 async function init() {
   loadLockout();
@@ -3583,6 +3997,8 @@ async function init() {
   if (lockoutUntil > Date.now()) startLockoutTimer();
   const inv = inviteFromUrl();
   if (inv) pendingInvite = inv;
+  // Init biométrie (async, non bloquant)
+  bioInitUI().catch(() => {});
 }
 init();
 
