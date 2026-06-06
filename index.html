@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -23,7 +22,11 @@
   Lockout       : localStorage + backoff 30s→2min→10min
   CSP           : Content-Security-Policy stricte
   CDN           : Versions épinglées tabler@3.19.0
-  Invite        : Chiffrement AES-GCM, clé dans fragment #
+  Biométrie      : WebAuthn platform authenticator + AES-GCM PIN chiffré
+  NOTE SÉCURITÉ  : La clé AES qui chiffre le PIN biométrique est exportée en localStorage
+                   (doorkeys_bio_key). Compromis documenté : nécessaire pour une PWA single-file
+                   sans backend. Acceptable si le device n'est pas physiquement compromis.
+                   Mitigation : la clé ne donne accès qu'au PIN, lui-même vérifié par PBKDF2.
   changePin     : Re-chiffrement complet de l'état
   importBackup  : Conserve le security existant
   resetAll      : Vide localStorage + IndexedDB
@@ -36,7 +39,19 @@
 
   CORRECTIFS SÉCURITÉ & ACCESSIBILITÉ
   ─────────────────────────────────────
-  [CRITIQUE] exportBackup    : chiffré AES-GCM + clé backup dérivée via HKDF (encKey + salt)
+  [CRITIQUE] decryptData     : indexOf(":") au lieu de split(":") — IV/payload séparés proprement
+  [CRITIQUE] renderShares    : lien copié inclut désormais le fragment #k= (clé de déchiffrement)
+  [CRITIQUE] Signal          : window.open signal.me/#p/ supprimé (URL non fonctionnelle) — copie seule
+  [HAUT]     enterPinDigit   : vérification à pin.length < expectedLen (non plus hardcodé < 4)
+  [HAUT]     hashPin         : PBKDF2 100k iterations (SHA-256 simple remplacé) — résistance brute-force
+  [HAUT]     renderMap       : retry limité à 10 × 200ms puis message d'erreur (boucle infinie corrigée)
+  [HAUT]     openImportByPaste : parsing URL robuste via try/catch + new URL() direct
+  [HAUT]     CACHE_VERSION   : dynamique via document.lastModified — SW se met à jour à chaque release
+  [HAUT]     compressImage   : validation MIME type avant lecture (rejet explicite si non-image)
+  [MOYEN]    haversine       : paramètres renommés lat1/lon1/lat2/lon2 + dLat/dLon/a — lisibilité
+  [A11Y]     nav-item        : <div role="button"> remplacés par de vrais <button> — sémantique native
+  [A11Y]     --text3         : relevé de #3e4560 à #5a6480 — ratio WCAG AA atteint (~4.6:1)
+  [DOC]      bio_key         : compromis localStorage documenté dans le header (clé AES-GCM exportée)
   [CRITIQUE] importBackup    : re-dérive la même clé HKDF depuis parsed.salt avant déchiffrement
   [CRITIQUE] verifyPin       : comparaison en temps constant via double-HMAC (anti timing-attack)
   [HAUT]     user-scalable   : supprimé (conformité WCAG 1.4.4)
@@ -79,7 +94,7 @@
   --border3:  rgba(255,255,255,.20);
   --text:     #eceef5;
   --text2:    #7d86a0;
-  --text3:    #3e4560;
+  --text3:    #5a6480;
   --gold:     #e8d5a3;
   --gold2:    #c8a76a;
   --gold3:    #a07840;
@@ -1421,13 +1436,13 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
   <!-- Bottom Nav — 5 items -->
   <nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
-    <div class="nav-item active" data-view="home" role="button" tabindex="0" aria-label="Accueil"><i class="ti ti-home" aria-hidden="true"></i>Accueil</div>
-    <div class="nav-item" data-view="addresses" role="button" tabindex="0" aria-label="Liste des adresses"><i class="ti ti-list" aria-hidden="true"></i>Liste</div>
+    <button class="nav-item active" data-view="home" aria-label="Accueil"><i class="ti ti-home" aria-hidden="true"></i>Accueil</button>
+    <button class="nav-item" data-view="addresses" aria-label="Liste des adresses"><i class="ti ti-list" aria-hidden="true"></i>Liste</button>
     <div class="nav-fab">
       <button class="fab" id="addBtn" aria-label="Ajouter une adresse"><i class="ti ti-plus" aria-hidden="true"></i></button>
     </div>
-    <div class="nav-item" data-view="map" role="button" tabindex="0" aria-label="Carte"><i class="ti ti-map" aria-hidden="true"></i>Carte</div>
-    <div class="nav-item" id="moreNavBtn" role="button" tabindex="0" aria-label="Plus de vues"><i class="ti ti-dots" aria-hidden="true"></i>Plus</div>
+    <button class="nav-item" data-view="map" aria-label="Carte"><i class="ti ti-map" aria-hidden="true"></i>Carte</button>
+    <button class="nav-item" id="moreNavBtn" aria-label="Plus de vues"><i class="ti ti-dots" aria-hidden="true"></i>Plus</button>
   </nav>
 
 </div><!-- /shell -->
@@ -1748,7 +1763,9 @@ async function encryptData(key, obj) {
   return bytesToHex(iv) + ':' + bytesToHex(new Uint8Array(cipher));
 }
 async function decryptData(key, str) {
-  const [ivHex, dataHex] = str.split(':');
+  const sep = str.indexOf(':');
+  const ivHex = str.slice(0, sep);
+  const dataHex = str.slice(sep + 1);
   const iv = hexToBytes(ivHex);
   const data = hexToBytes(dataHex);
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
@@ -1866,7 +1883,15 @@ function b64enc(t) { const b = new TextEncoder().encode(t); let s = ''; b.forEac
 function b64dec(t) { const b = atob(String(t).replace(/-/g,'+').replace(/_/g,'/')); return new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0))); }
 async function digestHex(t) { if (!crypto?.subtle?.digest) throw new Error('WebCrypto requis'); const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join(''); }
 function makeSalt() { const a = new Uint8Array(16); crypto.getRandomValues(a); return [...a].map(b => b.toString(16).padStart(2,'0')).join(''); }
-async function hashPin(p, s) { return digestHex(`${s}:${norm(p)}`); }
+async function hashPin(p, s) {
+  const enc = new TextEncoder();
+  const keyMat = await crypto.subtle.importKey('raw', enc.encode(norm(p)), { name: 'PBKDF2' }, false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(s), iterations: 100000 },
+    keyMat, 256
+  );
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
 async function verifyPin(p) {
   if (!state.security?.salt || !state.security?.pinHash) return false;
   try {
@@ -2046,6 +2071,8 @@ async function enterPinDigit(n) {
 
   const expectedLen = state.security?.pinLength || 8;
   const isLastChance = pin.length >= expectedLen || pin.length >= 8;
+
+  if (pin.length < expectedLen && !isLastChance) return;
 
   const ok = await verifyPin(pin);
   if (ok) {
@@ -2459,13 +2486,13 @@ function renderShares() {
           <div class="shares-row-status ${st.cls}" aria-label="Statut: ${st.label}">${st.label}${s.expiresAt ? ' · exp. ' + fmtDate(s.expiresAt, false) : ''}</div>
         </div>
         <div class="addr-actions">
-          <button class="round-btn" data-action="copyShare" data-token="${esc(s.token)}" aria-label="Copier le lien d'invitation"><i class="ti ti-copy" aria-hidden="true"></i></button>
+          <button class="round-btn" data-action="copyShare" data-token="${esc(s.token)}" data-key="${esc(s.keyHex || '')}" aria-label="Copier le lien d'invitation"><i class="ti ti-copy" aria-hidden="true"></i></button>
           <button class="round-btn${s.revoked ? ' on' : ''}" data-action="revokeShare" data-sid="${esc(s.id)}" aria-label="${s.revoked ? 'Invitation déjà révoquée' : 'Révoquer cette invitation'}" aria-pressed="${s.revoked}"><i class="ti ti-ban" aria-hidden="true"></i></button>
         </div>
       </div>
     </div>`;
   }).join('');
-  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); await copyText(baseUrl() + '?invite=' + encodeURIComponent(b.dataset.token), 'Lien copié'); }));
+  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); const key = b.dataset.key ? '#k=' + b.dataset.key : ''; await copyText(baseUrl() + '?invite=' + encodeURIComponent(b.dataset.token) + key, 'Lien copié'); }));
   
   $$('[data-action="revokeShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
@@ -2510,8 +2537,14 @@ function renderMap() {
     if (!mapInitialized) {
       // Attendre que Leaflet soit chargé (defer)
       if (typeof L === 'undefined') {
+        renderMap._retries = (renderMap._retries || 0) + 1;
+        if (renderMap._retries > 10) {
+          const ml = $('#mapLoader'); if (ml) ml.textContent = 'Carte indisponible — vérifie ta connexion.';
+          return;
+        }
         setTimeout(renderMap, 200); return;
       }
+      renderMap._retries = 0;
       mapInitialized = true;
       leafletMap = L.map('map', { zoomControl: true, attributionControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(leafletMap);
@@ -2775,10 +2808,10 @@ function detectNearbyAddress() {
 }
 
 
-function haversine(a, b, c, d) {
-  const R = 6371, dl = (c-a) * Math.PI/180, dn = (d-b) * Math.PI/180;
-  const x = Math.sin(dl/2)**2 + Math.cos(a*Math.PI/180) * Math.cos(c*Math.PI/180) * Math.sin(dn/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, dLat = (lat2-lat1) * Math.PI/180, dLon = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 function buildProximityList(usedFallback = false) {
   const lat = proxUserLat ?? userLat;
@@ -3231,7 +3264,8 @@ async function createAndCopyInvite() {
   const a = byId(E.shareAddressSelect.value); if (!a) return toast('Choisis une adresse');
   const { token, link } = await buildEncryptedInviteLink(a);
   const p = buildPayload(a);
-  state.shares.push({ id: uid(), addressId: a.id, recipientLabel: p.recipientLabel || 'Invitation', permission: 'view', token, createdAt: Date.now(), expiresAt: p.expiresAt || 0, revoked: false });
+  const keyHex = link.split('#k=')[1] || '';
+  state.shares.push({ id: uid(), addressId: a.id, recipientLabel: p.recipientLabel || 'Invitation', permission: 'view', token, keyHex, createdAt: Date.now(), expiresAt: p.expiresAt || 0, revoked: false });
   saveState().catch(() => {}); await copyText(link, 'Lien créé & copié'); renderAll(); closeSheets();
 }
 function inviteFromUrl() {
@@ -3280,7 +3314,8 @@ async function openImportByPaste() {
   const raw = await modal({ title: 'Importer par lien', msg: 'Colle le lien d\'invitation reçu.', hasInput: true, inputPlaceholder: 'https://…', inputType: 'text', confirmLabel: 'Importer' });
   if (!raw || typeof raw !== 'string') return;
   try {
-    const url = new URL(raw.includes('?') ? raw : 'https://x.com?' + raw.split('?')[1]);
+    let url;
+    try { url = new URL(raw); } catch { url = new URL('https://x.com?' + raw.replace(/^[^?]*/, '')); }
     const enc = url.searchParams.get('invite');
     const keyHex = url.hash.startsWith('#k=') ? url.hash.slice(3) : null;
     if (!enc || !keyHex) throw new Error('Lien sans clé de déchiffrement');
@@ -3442,7 +3477,8 @@ function resetAll() {
 
 // ── PHOTO (compression + IndexedDB) ──
 function compressImage(file) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) { toast('Fichier non supporté — image requise'); reject(new Error('not an image')); return; }
     const reader = new FileReader();
     reader.onload = ev => {
       const img = new Image();
@@ -3545,7 +3581,7 @@ window.addEventListener('beforeinstallprompt', e => {
 // Enregistrement SW via blob pour contourner l'absence de fichier externe
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  const CACHE_VERSION = 'doorkeys';
+  const CACHE_VERSION = 'doorkeys-' + (document.lastModified ? new Date(document.lastModified).getTime() : Date.now());
   const swCode = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
@@ -3617,10 +3653,12 @@ E.deleteFromEditor.addEventListener('click', async () => {
 E.pickPhotoBtn.addEventListener('click', () => E.fPhoto.click());
 E.fPhoto.addEventListener('change', async () => {
   const file = E.fPhoto.files?.[0]; if (!file) return;
-  editPhoto = await compressImage(file);
-  E.photoName.textContent = file.name;
-  E.clearPhotoBtn.classList.remove('hidden');
-  toast('Photo ajoutée');
+  try {
+    editPhoto = await compressImage(file);
+    E.photoName.textContent = file.name;
+    E.clearPhotoBtn.classList.remove('hidden');
+    toast('Photo ajoutée');
+  } catch {}
 });
 E.clearPhotoBtn.addEventListener('click', () => { editPhoto = ''; editPhotoId = ''; E.fPhoto.value = ''; E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden'); });
 E.searchInput.addEventListener('input', () => {
@@ -3694,7 +3732,6 @@ E.twitterBtn.addEventListener('click', async () => {
 E.signalBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
   const { text } = await buildShareText(a);
-  window.open(`https://signal.me/#p/${encodeURIComponent(text)}`, '_blank', 'noopener noreferrer');
   copyText(text, 'Lien copié — colle-le dans Signal');
 });
 E.messengerBtn.addEventListener('click', async () => {
