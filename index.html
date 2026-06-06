@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -721,7 +720,73 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .status-active  { color: var(--green) }
 .status-expired, .status-revoked { color: var(--text3) }
 
-/* ── PROXIMITY ── */
+/* ── SOCIAL SHARE GRID ── */
+.share-social-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px;
+}
+.social-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 12px 6px; border-radius: 16px;
+  border: 1px solid var(--border2); background: var(--bg2);
+  font-size: 11px; font-weight: 700; color: var(--text2);
+  transition: .15s; cursor: pointer;
+}
+.social-btn i { font-size: 22px }
+.social-btn:active { transform: scale(.93) }
+.social-btn.whatsapp  { border-color: rgba(37,211,102,.25);  color: #25d366 }
+.social-btn.whatsapp:active  { background: rgba(37,211,102,.1) }
+.social-btn.telegram  { border-color: rgba(36,161,222,.25);  color: #24a1de }
+.social-btn.telegram:active  { background: rgba(36,161,222,.1) }
+.social-btn.sms       { border-color: rgba(82,184,122,.25);  color: var(--green) }
+.social-btn.sms:active       { background: rgba(82,184,122,.1) }
+.social-btn.email     { border-color: rgba(232,213,163,.25); color: var(--gold) }
+.social-btn.email:active     { background: var(--goldBg) }
+.social-btn.twitter   { border-color: rgba(255,255,255,.15); color: var(--text) }
+.social-btn.twitter:active   { background: var(--bg3) }
+.social-btn.signal    { border-color: rgba(58,170,133,.25);  color: #3aaa85 }
+.social-btn.signal:active    { background: rgba(58,170,133,.1) }
+.social-btn.messenger { border-color: rgba(0,120,255,.25);   color: #0078ff }
+.social-btn.messenger:active { background: rgba(0,120,255,.1) }
+.social-btn.linkedin  { border-color: rgba(10,102,194,.25);  color: #0a66c2 }
+.social-btn.linkedin:active  { background: rgba(10,102,194,.1) }
+.social-btn.native    { border-color: rgba(155,111,255,.25); color: var(--purple) }
+.social-btn.native:active    { background: rgba(155,111,255,.1) }
+
+/* ── PROXIMITY SMART ── */
+.prox-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.prox-near-badge {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(232,213,163,.12), rgba(92,127,255,.06));
+  border: 1px solid var(--goldLine); border-radius: 18px; margin-bottom: 14px;
+  cursor: pointer; transition: .15s;
+}
+.prox-near-badge:active { transform: scale(.98) }
+.prox-near-pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+  flex-shrink: 0; position: relative;
+  box-shadow: 0 0 0 0 rgba(82,184,122,.6);
+  animation: proxPulse 2s ease infinite;
+}
+@keyframes proxPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(82,184,122,.6) }
+  70%  { box-shadow: 0 0 0 8px rgba(82,184,122,0) }
+  100% { box-shadow: 0 0 0 0 rgba(82,184,122,0) }
+}
+.prox-near-info { flex: 1; min-width: 0 }
+.prox-near-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-bottom: 2px }
+.prox-near-name  { font-family: var(--serif); font-size: 18px; letter-spacing: -.01em }
+.prox-near-dist  { font-size: 11px; color: var(--text2); font-family: var(--mono) }
+.prox-refresh-btn {
+  width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border2);
+  background: var(--bg2); color: var(--text2); display: grid; place-items: center; font-size: 16px;
+  transition: .15s; cursor: pointer; flex-shrink: 0;
+}
+.prox-refresh-btn:active { transform: rotate(180deg); color: var(--gold) }
+.prox-refresh-btn.spinning { animation: spin .7s linear infinite }
+@keyframes spin { to { transform: rotate(360deg) } }
+
 .prox-item {
   display: flex; align-items: center; gap: 12px; padding: 14px;
   background: var(--bg2); border: 1px solid var(--border);
@@ -1362,9 +1427,16 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
     <div class="btn-row" style="margin-top:14px">
       <button class="btn primary" id="createInviteBtn"><i class="ti ti-send" aria-hidden="true"></i> Créer & copier</button>
     </div>
-    <div class="btn-row">
-      <button class="btn" id="whatsappBtn"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> WhatsApp</button>
-      <button class="btn" id="nativeShareBtn"><i class="ti ti-share" aria-hidden="true"></i> Partager</button>
+    <div class="share-social-grid" id="shareSocialGrid">
+      <button class="social-btn whatsapp" id="whatsappBtn" aria-label="Partager via WhatsApp"><i class="ti ti-brand-whatsapp"></i><span>WhatsApp</span></button>
+      <button class="social-btn telegram" id="telegramBtn" aria-label="Partager via Telegram"><i class="ti ti-brand-telegram"></i><span>Telegram</span></button>
+      <button class="social-btn sms" id="smsBtn" aria-label="Partager par SMS"><i class="ti ti-message"></i><span>SMS</span></button>
+      <button class="social-btn email" id="emailBtn" aria-label="Partager par e-mail"><i class="ti ti-mail"></i><span>E-mail</span></button>
+      <button class="social-btn twitter" id="twitterBtn" aria-label="Partager sur X / Twitter"><i class="ti ti-brand-x"></i><span>X / Twitter</span></button>
+      <button class="social-btn signal" id="signalBtn" aria-label="Partager via Signal"><i class="ti ti-shield-lock"></i><span>Signal</span></button>
+      <button class="social-btn messenger" id="messengerBtn" aria-label="Partager via Messenger"><i class="ti ti-brand-messenger"></i><span>Messenger</span></button>
+      <button class="social-btn linkedin" id="linkedinBtn" aria-label="Partager sur LinkedIn"><i class="ti ti-brand-linkedin"></i><span>LinkedIn</span></button>
+      <button class="social-btn native" id="nativeShareBtn" aria-label="Autres apps"><i class="ti ti-share"></i><span>Autres…</span></button>
     </div>
   </div>
 </div>
@@ -1950,6 +2022,7 @@ function cardHTML(a) {
 const PRIMARY_VIEWS = new Set(['home', 'addresses', 'map']);
 function setView(v) {
   if (currentView === 'map' && v !== 'map') stopMapWatch();
+  if (currentView === 'proximity' && v !== 'proximity') stopProxWatch();
   currentView = v;
   // Nav items principaux
   $$('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
@@ -2448,18 +2521,81 @@ async function reverseGeocodeDistrict(lat, lng) {
   } catch { return ''; }
 }
 
-// ── PROXIMITÉ (fallback Paris si géoloc refusée) ──
+// ── PROXIMITÉ INTELLIGENTE ──
+let proxWatchId = null;
+let proxUserLat = null, proxUserLng = null;
+let proxAutoUpdateInterval = null;
+
 function renderProximity() {
   if (!state.addresses.length) {
     E.proxContent.innerHTML = `<div class="empty-state"><i class="ti ti-map-pin" aria-hidden="true"></i><h3>Aucune adresse</h3><p>Ajoute des adresses pour voir celles proches de toi.</p></div>`;
     return;
   }
-  E.proxContent.innerHTML = `<div class="empty-state"><i class="ti ti-gps" aria-hidden="true"></i><h3>Localisation…</h3><p>Récupération de ta position…</p></div>`;
-  navigator.geolocation.getCurrentPosition(
-    pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; buildProximityList(false); },
-    ()  => { userLat = 48.857; userLng = 2.347; buildProximityList(true); }
+  E.proxContent.innerHTML = `<div class="prox-header"><div style="font-size:13px;color:var(--text2)">Recherche de ta position…</div><button class="prox-refresh-btn spinning" id="proxRefreshBtn" aria-label="Rafraîchir"><i class="ti ti-refresh"></i></button></div>`;
+  $('#proxRefreshBtn')?.addEventListener('click', () => refreshProximity());
+
+  // Si on a déjà une position, afficher tout de suite
+  if (proxUserLat !== null) {
+    buildProximityList(false);
+  }
+
+  // Démarrer le watch GPS
+  startProxWatch();
+}
+
+function startProxWatch() {
+  if (proxWatchId !== null) return; // déjà actif
+  if (!navigator.geolocation) {
+    proxUserLat = 48.857; proxUserLng = 2.347;
+    buildProximityList(true); return;
+  }
+  proxWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      proxUserLat = pos.coords.latitude;
+      proxUserLng = pos.coords.longitude;
+      userLat = proxUserLat; userLng = proxUserLng;
+      buildProximityList(false);
+      // Mettre à jour le nearbyOverride aussi
+      updateNearbyFromCoords(proxUserLat, proxUserLng);
+    },
+    () => {
+      if (proxUserLat === null) { proxUserLat = 48.857; proxUserLng = 2.347; buildProximityList(true); }
+    },
+    { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
   );
 }
+
+function stopProxWatch() {
+  if (proxWatchId !== null) { navigator.geolocation?.clearWatch(proxWatchId); proxWatchId = null; }
+}
+
+function refreshProximity() {
+  const btn = $('#proxRefreshBtn');
+  if (btn) btn.classList.add('spinning');
+  navigator.geolocation?.getCurrentPosition(
+    pos => {
+      proxUserLat = pos.coords.latitude; proxUserLng = pos.coords.longitude;
+      userLat = proxUserLat; userLng = proxUserLng;
+      buildProximityList(false);
+      updateNearbyFromCoords(proxUserLat, proxUserLng);
+    },
+    () => buildProximityList(proxUserLat === null),
+    { enableHighAccuracy: true, timeout: 6000 }
+  );
+}
+
+function updateNearbyFromCoords(lat, lng) {
+  const withCoords = state.addresses.filter(a => a.lat !== null && a.lng !== null);
+  if (!withCoords.length) return;
+  let nearest = null, minDist = Infinity;
+  withCoords.forEach(a => { const d = haversine(lat, lng, a.lat, a.lng); if (d < minDist) { minDist = d; nearest = a; } });
+  if (nearest && minDist < 0.3) {
+    nearbyOverride = nearest; renderQuickBanner();
+  } else {
+    nearbyOverride = null; renderQuickBanner();
+  }
+}
+
 // ── DÉTECTION GPS AU DÉVERROUILLAGE ──
 function detectNearbyAddress() {
   if (!state.addresses.length) return;
@@ -2487,35 +2623,62 @@ function haversine(a, b, c, d) {
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
 }
 function buildProximityList(usedFallback = false) {
+  const lat = proxUserLat ?? userLat;
+  const lng = proxUserLng ?? userLng;
   const withDist = state.addresses.filter(a => a.lat !== null && a.lng !== null)
-    .map(a => ({ ...a, dist: haversine(userLat, userLng, a.lat, a.lng) }))
+    .map(a => ({ ...a, dist: haversine(lat, lng, a.lat, a.lng) }))
     .sort((a, b) => a.dist - b.dist);
   if (!withDist.length) {
     E.proxContent.innerHTML = `<div class="empty-state"><i class="ti ti-map-pin" aria-hidden="true"></i><h3>Coordonnées manquantes</h3><p>Ouvre la vue Carte pour géocoder tes adresses.</p></div>`;
     return;
   }
   const maxD = withDist[withDist.length-1]?.dist || 1;
-  
+  const nearest = withDist[0];
+  const isVeryClose = nearest && nearest.dist < 0.3;
+
   const fallbackBanner = usedFallback
     ? `<div style="background:rgba(232,213,163,.08);border:1px solid var(--goldLine);border-radius:12px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px;display:flex;gap:8px;align-items:center"><i class="ti ti-alert-circle" style="color:var(--gold)" aria-hidden="true"></i>Position non disponible — distances calculées depuis le centre de Paris</div>`
     : '';
-  E.proxContent.innerHTML = fallbackBanner + withDist.map(a => {
-    const d = a.dist < 1 ? Math.round(a.dist * 1000) + 'm' : a.dist.toFixed(1) + 'km';
-    const pct = Math.max(5, 100 - (a.dist / maxD * 100));
-    return `<div class="prox-item" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.name)}, à ${d}">
-      <div class="prox-dist" aria-hidden="true">${d}</div>
-      <div class="prox-info">
-        <div class="prox-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
-        <div class="prox-street">${esc(a.address)}</div>
-        <div class="prox-bar-wrap"><div class="prox-bar-fill" style="width:${pct}%"></div></div>
-      </div>
-      <i class="ti ti-chevron-right" style="color:var(--text3)" aria-hidden="true"></i>
-    </div>`;
-  }).join('');
+
+  const nearBadge = isVeryClose
+    ? `<div class="prox-near-badge" data-id="${nearest.id}" role="button" tabindex="0" aria-label="Ouvrir ${esc(nearest.name)}">
+        <div class="prox-near-pulse"></div>
+        <div class="prox-near-info">
+          <div class="prox-near-label">📍 Tu es là maintenant</div>
+          <div class="prox-near-name">${nearest.emoji || '🏠'} ${esc(nearest.name)}</div>
+          <div class="prox-near-dist">${nearest.dist < 1 ? Math.round(nearest.dist * 1000) + 'm' : nearest.dist.toFixed(1) + 'km'}</div>
+        </div>
+        <i class="ti ti-chevron-right" style="color:var(--text3)" aria-hidden="true"></i>
+      </div>`
+    : '';
+
+  E.proxContent.innerHTML = `
+    <div class="prox-header">
+      <div style="font-size:12px;color:var(--text3)">${usedFallback ? 'Position indisponible' : 'Mis à jour en temps réel'}</div>
+      <button class="prox-refresh-btn" id="proxRefreshBtn" aria-label="Rafraîchir"><i class="ti ti-refresh"></i></button>
+    </div>
+    ${fallbackBanner}
+    ${nearBadge}
+    ${withDist.map((a, i) => {
+      const d = a.dist < 1 ? Math.round(a.dist * 1000) + 'm' : a.dist.toFixed(1) + 'km';
+      const pct = Math.max(5, 100 - (a.dist / maxD * 100));
+      const isFirst = i === 0 && isVeryClose;
+      return `<div class="prox-item${isFirst ? ' hidden' : ''}" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.name)}, à ${d}">
+        <div class="prox-dist" aria-hidden="true">${d}</div>
+        <div class="prox-info">
+          <div class="prox-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
+          <div class="prox-street">${esc(a.address)}</div>
+          <div class="prox-bar-wrap"><div class="prox-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <i class="ti ti-chevron-right" style="color:var(--text3)" aria-hidden="true"></i>
+      </div>`;
+    }).join('')}`;
+
   $$('[data-id]', E.proxContent).forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.id));
     el.addEventListener('keydown', e => { if (e.key === 'Enter') openDetail(el.dataset.id); });
   });
+  $('#proxRefreshBtn')?.addEventListener('click', () => refreshProximity());
 }
 
 // ── FRÉQUENCE avec filtrage par période ──
@@ -3314,14 +3477,55 @@ $$('.more-item[data-view]', document).forEach(b => b.addEventListener('click', (
 E.closeShare.addEventListener('click', closeSheets);
 E.closeImport.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
 E.createInviteBtn.addEventListener('click', createAndCopyInvite);
+// ── SOCIAL SHARE HANDLERS ──
+async function buildShareText(a) {
+  const { link } = await buildEncryptedInviteLink(a);
+  return { link, text: `DoorKeys : ${a.name}\n${link}` };
+}
 E.whatsappBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
-  const { link } = await buildEncryptedInviteLink(a);
-  window.open(`https://wa.me/?text=${encodeURIComponent(`DoorKeys : ${a.name}\n${link}`)}`, '_blank', 'noopener noreferrer');
+  const { text } = await buildShareText(a);
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener noreferrer');
+});
+$('#telegramBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { link, text } = await buildShareText(a);
+  window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('DoorKeys : ' + a.name)}`, '_blank', 'noopener noreferrer');
+});
+$('#smsBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { text } = await buildShareText(a);
+  window.open(`sms:?body=${encodeURIComponent(text)}`, '_self');
+});
+$('#emailBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { link } = await buildShareText(a);
+  window.open(`mailto:?subject=${encodeURIComponent('DoorKeys — ' + a.name)}&body=${encodeURIComponent(`Voici les infos d'accès pour ${a.name} :\n\n${link}`)}`, '_self');
+});
+$('#twitterBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { link } = await buildShareText(a);
+  window.open(`https://x.com/intent/tweet?text=${encodeURIComponent('DoorKeys — ' + a.name)}&url=${encodeURIComponent(link)}`, '_blank', 'noopener noreferrer');
+});
+$('#signalBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { text } = await buildShareText(a);
+  window.open(`https://signal.me/#p/${encodeURIComponent(text)}`, '_blank', 'noopener noreferrer');
+  copyText(text, 'Lien copié — colle-le dans Signal');
+});
+$('#messengerBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { link } = await buildShareText(a);
+  window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(link)}&redirect_uri=${encodeURIComponent(location.href)}`, '_blank', 'noopener noreferrer');
+});
+$('#linkedinBtn').addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value); if (!a) return;
+  const { link } = await buildShareText(a);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`, '_blank', 'noopener noreferrer');
 });
 E.nativeShareBtn.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value); if (!a) return;
-  const { link } = await buildEncryptedInviteLink(a);
+  const { link } = await buildShareText(a);
   if (navigator.share) try { await navigator.share({ title: 'DoorKeys', text: a.name, url: link }); return; } catch {}
   copyText(link, 'Lien copié');
 });
