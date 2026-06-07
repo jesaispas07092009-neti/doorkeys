@@ -355,10 +355,12 @@ a { color: inherit; text-decoration: none }
 .filter-chip.active { background: var(--goldBg); border-color: var(--goldLine); color: var(--gold) }
 
 /* ── MAIN SCROLL ── */
-#main { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch }
+#main { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative }
 #main::-webkit-scrollbar { display: none }
 .view { display: none; padding: 16px 18px 24px; animation: fadeSlideUp .3s ease }
 .view.active { display: block }
+#view-map { padding: 0; position: absolute; inset: 0; display: none; }
+#view-map.active { display: block; }
 
 /* ── STATS ── */
 .stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px }
@@ -932,10 +934,10 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 @keyframes spin { to { transform: rotate(360deg) } }
 
 /* ── MAP ── */
-.map-wrap { border-radius: 0; overflow: hidden; height: calc(100vh - 120px); min-height: 300px; position: relative }
+.map-wrap { border-radius: 0; overflow: hidden; height: 100%; min-height: 300px; position: relative }
 #map { width: 100%; height: 100% }
 .map-locate-btn {
-  position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); right: 18px; z-index: 900;
+  position: absolute; bottom: 16px; right: 16px; z-index: 900;
   width: 44px; height: 44px; border-radius: 13px;
   background: var(--bg2); border: 1px solid var(--border2);
   display: grid; place-items: center; font-size: 20px;
@@ -1261,13 +1263,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .stat-v { font-size: clamp(24px, 7vw, 32px) }
 
 /* Carte : hauteur robuste avec small viewport unit si dispo */
-.map-wrap { height: calc(100svh - 120px) }
-@supports not (height: 100svh) {
-  .map-wrap { height: calc(100vh - 120px) }
-}
-@media (max-height: 600px) {
-  .map-wrap { height: 260px; min-height: 260px }
-}
+/* map-wrap fills view-map which fills #main */
 
 /* form-row : flexible sur petits écrans */
 @media (max-width: 380px) {
@@ -1440,13 +1436,13 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
     </div>
 
     <!-- Carte -->
-    <div class="view" id="view-map" style="position:relative;padding:0">
+    <div class="view" id="view-map">
       <div class="map-wrap">
         <div id="map" aria-label="Carte des adresses enregistrées"></div>
+        <button class="map-locate-btn" id="mapLocateBtn" title="Ma position" aria-label="Centrer sur ma position">
+          <i class="ti ti-navigation" aria-hidden="true"></i>
+        </button>
       </div>
-      <button class="map-locate-btn" id="mapLocateBtn" title="Ma position" aria-label="Centrer sur ma position">
-        <i class="ti ti-navigation" aria-hidden="true"></i>
-      </button>
     </div>
 
     <!-- Proximité -->
