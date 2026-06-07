@@ -1007,7 +1007,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .arrival-close:active { color: var(--text2) }
 
 .qr-modal {
-  position: absolute; inset: 0; z-index: 500; background: rgba(0,0,0,.85);
+  position: absolute; inset: 0; z-index: 1200; background: rgba(0,0,0,.85);
   backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
   padding: 24px; opacity: 0; pointer-events: none; transition: .25s;
 }
@@ -1232,7 +1232,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .arrival-close:active { color: var(--text2) }
 
 .qr-modal {
-  position: absolute; inset: 0; z-index: 500; background: rgba(0,0,0,.85);
+  position: absolute; inset: 0; z-index: 1200; background: rgba(0,0,0,.85);
   backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
   padding: 24px; opacity: 0; pointer-events: none; transition: .25s;
 }
@@ -4506,7 +4506,8 @@ $('#createQrBtn')?.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value);
   if (!a) return toast('Choisis une adresse');
   const { link } = await buildEncryptedInviteLink(a);
-  openQrModal(link, a.name);
+  closeSheets();
+  setTimeout(() => openQrModal(link, a.name), 300);
 });
 // ── SOCIAL SHARE HANDLERS ──
 async function buildShareText(a) {
