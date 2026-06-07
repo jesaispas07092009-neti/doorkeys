@@ -2177,7 +2177,7 @@ function openQrModal(link, name) {
   const canvas = $('#qrCanvas');
   const sub = $('#qrSub');
   if (!modal || !canvas || !sub) return;
-  sub.textContent = name || 'Scanne pour importer l'adresse';
+  sub.textContent = name || `Scanne pour importer l'adresse`;
   // Dessiner via une image depuis l'API QR (HTTPS, pas de clé, pas de tracking)
   const size = 200;
   const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(link)}&bgcolor=ffffff&color=000000&format=png&margin=0`;
