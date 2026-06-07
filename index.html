@@ -2421,9 +2421,15 @@ const QRLocal = (() => {
       if(!m){ console.error('QR: texte trop long'); return; }
       const n=m.length, quiet=4;
       const total=n+quiet*2;
-      const sz=canvas.width;
-      const cell=sz/total;
+      // Cellule entière (pas de décimale) pour éviter les artefacts de rendu
+      const cell=Math.floor(canvas.width/total);
+      const sz=cell*total;
+      // Adapter au Device Pixel Ratio (écrans Retina/HD)
+      const dpr=window.devicePixelRatio||1;
+      canvas.width=sz*dpr; canvas.height=sz*dpr;
+      canvas.style.width=sz+'px'; canvas.style.height=sz+'px';
       const ctx=canvas.getContext('2d');
+      ctx.scale(dpr,dpr);
       ctx.fillStyle=bg; ctx.fillRect(0,0,sz,sz);
       ctx.fillStyle=fg;
       for(let r=0;r<n;r++) for(let c=0;c<n;c++)
@@ -2439,7 +2445,7 @@ function openQrModal(link, name) {
   const sub = $('#qrSub');
   if (!modal || !canvas || !sub) return;
   sub.textContent = name || `Scanne pour importer l'adresse`;
-  const size = 200;
+  const size = 280;
   canvas.width = size; canvas.height = size;
   try {
     QRLocal.draw(link, canvas, '#000000', '#ffffff');
