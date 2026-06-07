@@ -2234,9 +2234,8 @@ function modal({ title = '', msg = '', confirmLabel = 'Confirmer', confirmClass 
       E.modalInput.setAttribute('inputmode', inputType === 'password' ? 'numeric' : 'text');
     }
     E.modalOverlay.classList.add('open');
-    if (hasInput) setTimeout(() => E.modalInput.focus(), 300);
-    else setTimeout(() => E.modalConfirm.focus(), 50);
     trapFocus(E.modalOverlay);
+    if (hasInput) setTimeout(() => E.modalInput.focus(), 60);
   });
 }
 function closeModal(r) { untrapFocus(E.modalOverlay); E.modalOverlay.classList.remove('open'); if (modalResolve) { modalResolve(r); modalResolve = null; } }
@@ -4044,7 +4043,7 @@ window.addEventListener('beforeinstallprompt', e => {
 // Enregistrement SW via blob pour contourner l'absence de fichier externe
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  const CACHE_VERSION = 'doorkeys-' + (document.lastModified ? new Date(document.lastModified).getTime() : Date.now());
+  const CACHE_VERSION = 'doorkeys-' + ((() => { const s = document.documentElement.innerHTML; let h = 0; for (let i = 0; i < Math.min(s.length, 50000); i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); })());
   const swCode = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
@@ -4263,7 +4262,7 @@ document.addEventListener('touchstart', () => bumpInactivity(), { passive: true 
 document.addEventListener('keydown', e => {
   if (!unlocked && /\d/.test(e.key)) enterPinDigit(e.key);
   if (!unlocked && e.key === 'Backspace') { pin = pin.slice(0, -1); renderDots(false); }
-  if (e.key === 'Escape') closeSheets();
+  if (e.key === 'Escape') { closeModal(null); closeSheets(); }
   bumpInactivity();
 });
 let storageIgnore = false;
