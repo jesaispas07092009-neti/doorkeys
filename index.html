@@ -2170,6 +2170,224 @@ function closeArrivalMode() {
 
 // ── QR CODE ──
 let qrCurrentLink = '';
+// ── QR CODE LOCAL (sans appel réseau) ──
+// Micro-implémentation QR Code Model 2, versions 1-10, correction L
+// Génère directement sur un <canvas> sans dépendance externe.
+const QRLocal = (() => {
+  // Tables GF(256) pour Reed-Solomon
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  (()=>{ let x=1; for(let i=0;i<255;i++){ EXP[i]=x; LOG[x]=i; x=(x<<1)^(x&0x80?0x11d:0); } for(let i=255;i<512;i++) EXP[i]=EXP[i-255]; })();
+  const gfMul=(a,b)=>a&&b?EXP[LOG[a]+LOG[b]]:0;
+  const gfPoly=(ec)=>{ let p=[1]; for(let i=0;i<ec;i++){ const r=[0,...p]; for(let j=0;j<p.length;j++){ r[j]^=gfMul(p[j],EXP[i]); r[j+1]^=gfMul(p[j],0); } p=r; } return p; };
+  const rsBlock=(data,ec)=>{ const g=gfPoly(ec),res=new Uint8Array(ec); for(const b of data){ const f=b^res[0]; res.copyWithin(0,1); res[ec-1]=0; for(let i=0;i<ec;i++) res[i]^=gfMul(f,g[g.length-1-i]); } return res; };
+
+  // Encodage alphanumérique / byte
+  const ALPHA='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+  function encode(text){
+    // Force byte encoding (UTF-8)
+    const bytes=[...new TextEncoder().encode(text)];
+    const bits=[];
+    const push=(v,n)=>{ for(let i=n-1;i>=0;i--) bits.push((v>>i)&1); };
+    push(0b0100,4); push(bytes.length,8);
+    bytes.forEach(b=>push(b,8));
+    return {bits,len:bytes.length};
+  }
+
+  // Capacités par version (bytes, ec_codewords) pour niveau L
+  const CAPS=[[],[19,7],[34,10],[55,15],[80,20],[108,26],[136,18],[156,20],[194,24],[232,30],[274,18]];
+  // Modules par version
+  const MODS=[0,21,25,29,33,37,41,45,49,53,57];
+  // Alignement patterns (version ≥2)
+  const ALIGN=[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]];
+
+  function bestVersion(bits){
+    for(let v=1;v<=10;v++){
+      const cap=CAPS[v]; if(!cap) continue;
+      const total=cap[0]; // data codewords
+      const needed=Math.ceil((bits+4)/8);
+      if(needed<=total) return v;
+    }
+    return null;
+  }
+
+  function makeMatrix(v){
+    const n=MODS[v];
+    const m=Array.from({length:n},()=>new Int8Array(n).fill(-1));
+    return m;
+  }
+
+  function setFinder(m,r,c){
+    for(let dr=-1;dr<=7;dr++) for(let dc=-1;dc<=7;dc++){
+      const row=r+dr,col=c+dc;
+      if(row<0||col<0||row>=m.length||col>=m.length) continue;
+      const onBorder=dr===-1||dr===7||dc===-1||dc===7;
+      const inner=dr>=1&&dr<=5&&dc>=1&&dc<=5;
+      const innerCore=dr>=2&&dr<=4&&dc>=2&&dc<=4;
+      m[row][col]=onBorder||innerCore?1:0;
+    }
+  }
+
+  function setTiming(m){
+    const n=m.length;
+    for(let i=8;i<n-8;i++){
+      m[6][i]=i%2===0?1:0;
+      m[i][6]=i%2===0?1:0;
+    }
+  }
+
+  function setAlign(m,v){
+    const pos=ALIGN[v]; if(pos.length<2) return;
+    const centers=[];
+    for(const r of pos) for(const c of pos) centers.push([r,c]);
+    for(const [cr,cc] of centers){
+      if(m[cr][cc]!==-1) continue;
+      for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
+        const onBorder=Math.abs(dr)===2||Math.abs(dc)===2;
+        const center=dr===0&&dc===0;
+        m[cr+dr][cc+dc]=onBorder||center?1:0;
+      }
+    }
+  }
+
+  function reserveFormat(m){
+    const n=m.length;
+    for(let i=0;i<9;i++){
+      if(m[8][i]===-1) m[8][i]=0;
+      if(m[i][8]===-1) m[i][8]=0;
+    }
+    for(let i=0;i<8;i++){
+      if(m[8][n-1-i]===-1) m[8][n-1-i]=0;
+      if(m[n-1-i][8]===-1) m[n-1-i][8]=0;
+    }
+    m[n-8][8]=1; // dark module
+  }
+
+  function* dataModules(m){
+    const n=m.length;
+    let up=true;
+    for(let col=n-1;col>=0;col-=2){
+      const c=col<=6?col-1:col;
+      const rows=up?Array.from({length:n},(_,i)=>n-1-i):Array.from({length:n},(_,i)=>i);
+      for(const row of rows){
+        for(let dc=0;dc<2;dc++){
+          const cc=c-dc;
+          if(cc===6) continue;
+          if(m[row][cc]===-1) yield [row,cc];
+        }
+      }
+      up=!up;
+    }
+  }
+
+  // Format string (mask 0, EC level L = 01)
+  const FORMAT_STRINGS={
+    0:0x77c4,1:0x72f3,2:0x7daa,3:0x789d,4:0x662f,5:0x6318,6:0x6c41,7:0x6976
+  };
+  function writeFormat(m,mask){
+    const n=m.length,fs=FORMAT_STRINGS[mask];
+    const bits=[];
+    for(let i=14;i>=0;i--) bits.push((fs>>i)&1);
+    let idx=0;
+    for(let i=0;i<6;i++) m[8][i]=bits[idx++];
+    m[8][7]=bits[idx++]; m[8][8]=bits[idx++]; m[7][8]=bits[idx++];
+    for(let i=5;i>=0;i--) m[i][8]=bits[idx++];
+    idx=0;
+    for(let i=n-1;i>=n-8;i--) m[8][i]=bits[idx++];
+    for(let i=n-7;i<n;i++) m[i][8]=bits[idx++];
+  }
+
+  const MASKS=[
+    (r,c)=>(r+c)%2===0,
+    (r,_)=>r%2===0,
+    (_,c)=>c%3===0,
+    (r,c)=>(r+c)%3===0,
+    (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
+    (r,c)=>(r*c)%2+(r*c)%3===0,
+    (r,c)=>((r*c)%2+(r*c)%3)%2===0,
+    (r,c)=>((r+c)%2+(r*c)%3)%2===0,
+  ];
+
+  function penaltyScore(m){
+    const n=m.length; let p=0;
+    // Rule 1: 5+ same in a row/col
+    for(let r=0;r<n;r++){
+      for(let start=0;start<n;){
+        let run=1; while(start+run<n&&m[r][start+run]===m[r][start]) run++;
+        if(run>=5) p+=run-2; start+=run;
+      }
+    }
+    for(let c=0;c<n;c++){
+      for(let start=0;start<n;){
+        let run=1; while(start+run<n&&m[start+run][c]===m[start][c]) run++;
+        if(run>=5) p+=run-2; start+=run;
+      }
+    }
+    // Rule 2: 2x2 blocks
+    for(let r=0;r<n-1;r++) for(let c=0;c<n-1;c++)
+      if(m[r][c]===m[r][c+1]&&m[r][c]===m[r+1][c]&&m[r][c]===m[r+1][c+1]) p+=3;
+    return p;
+  }
+
+  function generate(text){
+    const {bits} = encode(text);
+    const v = bestVersion(bits.length);
+    if(!v) return null;
+    const [dataCW, ecCW] = CAPS[v];
+    // Pad bits to dataCW bytes
+    const allBits=[...bits,0,0,0,0];
+    while(allBits.length%8!==0) allBits.push(0);
+    while(allBits.length<dataCW*8){
+      allBits.push(...[1,1,1,0,1,1,0,0]);
+      if(allBits.length<dataCW*8) allBits.push(...[0,0,0,1,0,0,0,1]);
+    }
+    const dataBytes=new Uint8Array(dataCW);
+    for(let i=0;i<dataCW;i++) dataBytes[i]=(allBits[i*8]<<7)|(allBits[i*8+1]<<6)|(allBits[i*8+2]<<5)|(allBits[i*8+3]<<4)|(allBits[i*8+4]<<3)|(allBits[i*8+5]<<2)|(allBits[i*8+6]<<1)|allBits[i*8+7];
+    const ecBytes=rsBlock(dataBytes,ecCW);
+    const codewords=[...dataBytes,...ecBytes];
+    // Build matrix
+    const m=makeMatrix(v);
+    setFinder(m,0,0); setFinder(m,0,m.length-7); setFinder(m,m.length-7,0);
+    setTiming(m); setAlign(m,v); reserveFormat(m);
+    // Place data
+    let cwIdx=0,bitIdx=7;
+    for(const [r,c] of dataModules(m)){
+      m[r][c]=(codewords[cwIdx]>>bitIdx)&1;
+      if(--bitIdx<0){bitIdx=7;cwIdx++;}
+    }
+    // Find best mask
+    let bestMask=0,bestPenalty=Infinity;
+    for(let mask=0;mask<8;mask++){
+      const mm=m.map(row=>Int8Array.from(row));
+      for(let r=0;r<mm.length;r++) for(let c=0;c<mm.length;c++)
+        if(mm[r][c]<=1) mm[r][c]=mm[r][c]^(MASKS[mask](r,c)?1:0);
+      writeFormat(mm,mask);
+      const pen=penaltyScore(mm);
+      if(pen<bestPenalty){bestPenalty=pen;bestMask=mask;}
+    }
+    // Apply best mask
+    for(let r=0;r<m.length;r++) for(let c=0;c<m.length;c++)
+      if(m[r][c]<=1) m[r][c]=m[r][c]^(MASKS[bestMask](r,c)?1:0);
+    writeFormat(m,bestMask);
+    return m;
+  }
+
+  return {
+    draw(text, canvas, fg='#000000', bg='#ffffff'){
+      const m=generate(text);
+      if(!m){ console.error('QR: texte trop long'); return; }
+      const n=m.length, quiet=4;
+      const total=n+quiet*2;
+      const sz=canvas.width;
+      const cell=sz/total;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle=bg; ctx.fillRect(0,0,sz,sz);
+      ctx.fillStyle=fg;
+      for(let r=0;r<n;r++) for(let c=0;c<n;c++)
+        if(m[r][c]===1) ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
+    }
+  };
+})();
+
 function openQrModal(link, name) {
   qrCurrentLink = link;
   const modal = $('#qrModal');
@@ -2177,31 +2395,17 @@ function openQrModal(link, name) {
   const sub = $('#qrSub');
   if (!modal || !canvas || !sub) return;
   sub.textContent = name || `Scanne pour importer l'adresse`;
-  // Dessiner via une image depuis l'API QR (HTTPS, pas de clé, pas de tracking)
   const size = 200;
-  const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(link)}&bgcolor=ffffff&color=000000&format=png&margin=0`;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = '#f0f0f0';
-  ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = '#888';
-  ctx.font = '13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Chargement…', size/2, size/2);
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => { ctx.clearRect(0, 0, size, size); ctx.drawImage(img, 0, 0, size, size); };
-  img.onerror = () => {
-    ctx.clearRect(0, 0, size, size);
-    ctx.fillStyle = '#333';
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#e05555';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
+  canvas.width = size; canvas.height = size;
+  try {
+    QRLocal.draw(link, canvas, '#000000', '#ffffff');
+  } catch(e) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle = '#e05555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('QR non disponible', size/2, size/2 - 8);
-    ctx.fillText('(réseau requis)', size/2, size/2 + 12);
-  };
-  img.src = url;
+    ctx.fillText('(lien trop long)', size/2, size/2 + 12);
+  }
   modal.classList.add('open');
   $('#qrCloseBtn')?.focus();
 }
