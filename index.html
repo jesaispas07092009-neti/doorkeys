@@ -2171,7 +2171,7 @@ function closeArrivalMode() {
 // ── QR CODE ──
 let qrCurrentLink = '';
 // ── QR CODE LOCAL (sans appel réseau) ──
-// Micro-implémentation QR Code Model 2, versions 1-10, correction L
+// Micro-implémentation QR Code Model 2, versions 1-20, correction L
 // Génère directement sur un <canvas> sans dépendance externe.
 const QRLocal = (() => {
   // Tables GF(256) pour Reed-Solomon
@@ -2193,19 +2193,18 @@ const QRLocal = (() => {
     return {bits,len:bytes.length};
   }
 
-  // Capacités par version (bytes, ec_codewords) pour niveau L
-  const CAPS=[[],[19,7],[34,10],[55,15],[80,20],[108,26],[136,18],[156,20],[194,24],[232,30],[274,18]];
-  // Modules par version
-  const MODS=[0,21,25,29,33,37,41,45,49,53,57];
-  // Alignement patterns (version ≥2)
-  const ALIGN=[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]];
+  // Capacités (data codewords, ec codewords) pour EC niveau L — versions 1-20
+  const CAPS=[[],[19,7],[34,10],[55,15],[80,20],[108,26],[136,18],[156,20],[194,24],[232,30],[274,18],[321,20],[370,24],[428,26],[461,30],[523,22],[589,24],[647,28],[721,30],[795,28],[861,28]];
+  // Nombre de modules par version
+  const MODS=[0,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,89,93,97];
+  // Positions des alignment patterns par version
+  const ALIGN=[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90]];
 
   function bestVersion(bits){
-    for(let v=1;v<=10;v++){
+    for(let v=1;v<=20;v++){
       const cap=CAPS[v]; if(!cap) continue;
-      const total=cap[0]; // data codewords
       const needed=Math.ceil((bits+4)/8);
-      if(needed<=total) return v;
+      if(needed<=cap[0]) return v;
     }
     return null;
   }
@@ -2249,7 +2248,7 @@ const QRLocal = (() => {
     }
   }
 
-  function reserveFormat(m){
+  function reserveFormat(m,v){
     const n=m.length;
     for(let i=0;i<9;i++){
       if(m[8][i]===-1) m[8][i]=0;
@@ -2260,6 +2259,31 @@ const QRLocal = (() => {
       if(m[n-1-i][8]===-1) m[n-1-i][8]=0;
     }
     m[n-8][8]=1; // dark module
+    // Version info blocks (versions 7+)
+    if(v>=7){
+      for(let i=0;i<6;i++){
+        m[n-11][i]=0; m[n-10][i]=0; m[n-9][i]=0;
+        m[i][n-11]=0; m[i][n-10]=0; m[i][n-9]=0;
+      }
+    }
+  }
+
+  // Précalcul des version info strings (versions 7-20)
+  // Polynôme générateur x^12+x^11+x^10+x^9+x^8+x^5+x^2+1 = 0x1F25
+  function versionInfoBits(v){
+    let val=v<<12;
+    for(let i=17;i>=12;i--) if(val&(1<<i)) val^=0x1F25<<(i-12);
+    return (v<<12)|val;
+  }
+  function writeVersionInfo(m,v){
+    if(v<7) return;
+    const n=m.length, bits=versionInfoBits(v);
+    for(let i=0;i<18;i++){
+      const b=(bits>>i)&1;
+      const row=Math.floor(i/3), col=i%3;
+      m[row][n-11+col]=b;
+      m[n-11+col][row]=b;
+    }
   }
 
   function* dataModules(m){
@@ -2328,26 +2352,44 @@ const QRLocal = (() => {
     return p;
   }
 
+  // Structure des blocs RS par version, EC niveau L : [g1_blocs, g1_data, g2_blocs, g2_data, ec_par_bloc]
+  const RS_BLOCKS=[null,
+    [1,19,0,0,7],[1,34,0,0,10],[1,55,0,0,15],[1,80,0,0,20],
+    [1,108,0,0,26],[2,68,0,0,18],[2,78,0,0,20],[2,97,0,0,24],
+    [2,116,0,0,30],[2,68,2,69,18],[4,81,0,0,20],[2,92,2,93,24],
+    [4,107,0,0,26],[3,115,1,116,30],[5,87,1,88,22],[5,98,1,99,24],
+    [1,107,5,108,28],[5,120,1,121,30],[3,113,4,114,28],[3,107,5,108,28],
+  ];
+
   function generate(text){
     const {bits} = encode(text);
     const v = bestVersion(bits.length);
     if(!v) return null;
-    const [dataCW, ecCW] = CAPS[v];
-    // Pad bits to dataCW bytes
+    const [dataCW] = CAPS[v];
+    const [g1b,g1d,g2b,g2d,ecPer] = RS_BLOCKS[v];
+    // Pad bits
     const allBits=[...bits,0,0,0,0];
     while(allBits.length%8!==0) allBits.push(0);
     while(allBits.length<dataCW*8){
       allBits.push(...[1,1,1,0,1,1,0,0]);
       if(allBits.length<dataCW*8) allBits.push(...[0,0,0,1,0,0,0,1]);
     }
-    const dataBytes=new Uint8Array(dataCW);
-    for(let i=0;i<dataCW;i++) dataBytes[i]=(allBits[i*8]<<7)|(allBits[i*8+1]<<6)|(allBits[i*8+2]<<5)|(allBits[i*8+3]<<4)|(allBits[i*8+4]<<3)|(allBits[i*8+5]<<2)|(allBits[i*8+6]<<1)|allBits[i*8+7];
-    const ecBytes=rsBlock(dataBytes,ecCW);
-    const codewords=[...dataBytes,...ecBytes];
+    // Découper en blocs de données
+    const allData=new Uint8Array(dataCW);
+    for(let i=0;i<dataCW;i++) allData[i]=(allBits[i*8]<<7)|(allBits[i*8+1]<<6)|(allBits[i*8+2]<<5)|(allBits[i*8+3]<<4)|(allBits[i*8+4]<<3)|(allBits[i*8+5]<<2)|(allBits[i*8+6]<<1)|allBits[i*8+7];
+    const dataBlocks=[], ecBlocks=[];
+    let pos=0;
+    for(let i=0;i<g1b;i++){ dataBlocks.push(allData.slice(pos,pos+g1d)); ecBlocks.push(rsBlock(allData.slice(pos,pos+g1d),ecPer)); pos+=g1d; }
+    for(let i=0;i<g2b;i++){ dataBlocks.push(allData.slice(pos,pos+g2d)); ecBlocks.push(rsBlock(allData.slice(pos,pos+g2d),ecPer)); pos+=g2d; }
+    // Interleaving data puis EC
+    const codewords=[];
+    const maxData=Math.max(g1d,g2d);
+    for(let i=0;i<maxData;i++) for(const b of dataBlocks) if(i<b.length) codewords.push(b[i]);
+    for(let i=0;i<ecPer;i++) for(const b of ecBlocks) codewords.push(b[i]);
     // Build matrix
     const m=makeMatrix(v);
     setFinder(m,0,0); setFinder(m,0,m.length-7); setFinder(m,m.length-7,0);
-    setTiming(m); setAlign(m,v); reserveFormat(m);
+    setTiming(m); setAlign(m,v); reserveFormat(m,v);
     // Place data
     let cwIdx=0,bitIdx=7;
     for(const [r,c] of dataModules(m)){
@@ -2361,6 +2403,7 @@ const QRLocal = (() => {
       for(let r=0;r<mm.length;r++) for(let c=0;c<mm.length;c++)
         if(mm[r][c]<=1) mm[r][c]=mm[r][c]^(MASKS[mask](r,c)?1:0);
       writeFormat(mm,mask);
+      writeVersionInfo(mm,v);
       const pen=penaltyScore(mm);
       if(pen<bestPenalty){bestPenalty=pen;bestMask=mask;}
     }
@@ -2368,6 +2411,7 @@ const QRLocal = (() => {
     for(let r=0;r<m.length;r++) for(let c=0;c<m.length;c++)
       if(m[r][c]<=1) m[r][c]=m[r][c]^(MASKS[bestMask](r,c)?1:0);
     writeFormat(m,bestMask);
+    writeVersionInfo(m,v);
     return m;
   }
 
