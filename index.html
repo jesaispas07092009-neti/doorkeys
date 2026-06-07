@@ -2982,7 +2982,7 @@ function renderShares() {
       </div>
     </div>`;
   }).join('');
-  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); const key = b.dataset.key ? '#k=' + b.dataset.key : ''; await copyText(baseUrl() + '?invite=' + encodeURIComponent(b.dataset.token) + key, 'Lien copié'); }));
+  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); const key = b.dataset.key ? '#k=' + b.dataset.key : ''; await copyText(baseUrl() + '?i=' + encodeURIComponent(b.dataset.token) + key, 'Lien copié'); }));
   
   $$('[data-action="revokeShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
@@ -3893,30 +3893,91 @@ function buildPayload(a) {
     address: { name: a.name, address: E.shareAddr.checked ? a.address : '', category: a.category, contact: a.contact, phone: a.phone, floor: E.shareFloor.checked ? a.floor : '', intercom: E.shareFloor.checked ? a.intercom : '', code: E.shareCode.checked ? a.code : '', notes: E.shareNotes.checked ? a.notes : '', emoji: a.emoji || '🏠' },
   };
 }
-// Chiffrement AES-GCM du payload, clé dans le fragment URL (#k=...)
+// Encodage binaire compact (base64url sans padding)
+function b64uFromBytes(buf) {
+  let s = '';
+  const a = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  a.forEach(b => s += String.fromCharCode(b));
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
+}
+function b64uToBytes(s) {
+  const pad = s.length % 4 ? '='.repeat(4 - s.length % 4) : '';
+  const bin = atob(s.replace(/-/g,'+').replace(/_/g,'/') + pad);
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+// Payload compact : on ne garde que les champs utiles avec des clés courtes
+function buildCompactPayload(a) {
+  const p = buildPayload(a);
+  // Clés courtes pour réduire la taille JSON
+  const c = {
+    v: 2,
+    n: p.address.name,
+    e: p.address.emoji,
+    cat: p.address.category,
+  };
+  if (p.address.address)   c.a  = p.address.address;
+  if (p.address.code)      c.cd = p.address.code;
+  if (p.address.floor)     c.fl = p.address.floor;
+  if (p.address.intercom)  c.ic = p.address.intercom;
+  if (p.address.notes)     c.nt = p.address.notes;
+  if (p.address.contact)   c.ct = p.address.contact;
+  if (p.address.phone)     c.ph = p.address.phone;
+  if (p.recipientLabel)    c.rl = p.recipientLabel;
+  if (p.expiresAt)         c.ex = p.expiresAt;
+  if (p.sourceWorkspace)   c.ws = p.sourceWorkspace;
+  return c;
+}
+function expandCompactPayload(c) {
+  // Reconvertit le format compact vers le format attendu par resolveInvite
+  return {
+    version: c.v || 2, kind: 'doorkeys.invite',
+    recipientLabel: c.rl || '', permission: 'view',
+    expiresAt: c.ex || 0,
+    sourceWorkspace: c.ws || '',
+    fields: { address: !!c.a, code: !!c.cd, floor: !!c.fl, notes: !!c.nt },
+    address: {
+      name: c.n || '', emoji: c.e || '🏠', category: c.cat || '',
+      address: c.a || '', code: c.cd || '', floor: c.fl || '',
+      intercom: c.ic || '', notes: c.nt || '', contact: c.ct || '', phone: c.ph || '',
+    },
+  };
+}
+// Chiffrement AES-GCM compact — IV(12B) + ciphertext encodés en base64url binaire
 async function buildEncryptedInviteLink(a) {
-  const payload = buildPayload(a);
-  // Générer une clé éphémère pour cette invitation
+  const payload = buildCompactPayload(a);
   const shareKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = new TextEncoder().encode(JSON.stringify(payload));
   const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, shareKey, data);
   const rawKey = await crypto.subtle.exportKey('raw', shareKey);
-  const keyHex = bytesToHex(new Uint8Array(rawKey));
-  const ivHex = bytesToHex(iv);
-  const cipherHex = bytesToHex(new Uint8Array(cipher));
-  const token = b64enc(ivHex + ':' + cipherHex);
-  // Clé dans le fragment (jamais envoyée au serveur)
-  return { token, link: `${baseUrl()}?invite=${encodeURIComponent(token)}#k=${keyHex}` };
+  // Concat IV + ciphertext → un seul b64url (pas de séparateur hex)
+  const combined = new Uint8Array(12 + cipher.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(cipher), 12);
+  const token = b64uFromBytes(combined);
+  const keyB64 = b64uFromBytes(new Uint8Array(rawKey));
+  return { token, link: `${baseUrl()}?i=${token}#k=${keyB64}` };
 }
-async function decryptInviteToken(token, keyHex) {
+async function decryptInviteToken(token, keyB64) {
   try {
-    const raw = b64dec(token);
-    const [ivHex, cipherHex] = raw.split(':');
-    const keyBytes = hexToBytes(keyHex);
+    // Support ancien format hex (rétrocompat)
+    let combined, keyBytes;
+    if (token.includes(':')) {
+      // Ancien format : ivHex:cipherHex
+      const [ivHex, cipherHex] = b64dec(token).split(':');
+      combined = new Uint8Array([...hexToBytes(ivHex), ...hexToBytes(cipherHex)]);
+      keyBytes = keyB64.length === 64 ? hexToBytes(keyB64) : b64uToBytes(keyB64);
+    } else {
+      combined = b64uToBytes(token);
+      keyBytes = b64uToBytes(keyB64);
+    }
+    const iv = combined.slice(0, 12);
+    const cipher = combined.slice(12);
     const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: hexToBytes(ivHex) }, key, hexToBytes(cipherHex));
-    return JSON.parse(new TextDecoder().decode(plain));
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
+    const parsed = JSON.parse(new TextDecoder().decode(plain));
+    // Expandre si format compact (présence de 'n' au lieu de 'address')
+    return parsed.n !== undefined ? expandCompactPayload(parsed) : parsed;
   } catch { return null; }
 }
 
@@ -3957,15 +4018,11 @@ async function createAndCopyInvite() {
 }
 function inviteFromUrl() {
   const params = new URLSearchParams(location.search);
-  const raw = params.get('invite');
-  const keyHex = location.hash.startsWith('#k=') ? location.hash.slice(3) : null;
-  if (!raw) return null;
-  // Invitations chiffrées uniquement (clé dans le fragment #k=...)
-  if (keyHex) {
-    return { _enc: true, token: raw, keyHex };
-  }
-  // Les invitations sans clé de déchiffrement sont rejetées (protection contre les forges d'URL)
-  return null;
+  // Nouveau format compact (?i=) ou ancien (?invite=)
+  const raw = params.get('i') || params.get('invite');
+  const keyB64 = location.hash.startsWith('#k=') ? location.hash.slice(3) : null;
+  if (!raw || !keyB64) return null;
+  return { _enc: true, token: raw, keyHex: keyB64 };
 }
 async function resolveInvite(inv) {
   if (!inv) return null;
@@ -4004,10 +4061,10 @@ async function openImportByPaste() {
   try {
     let url;
     try { url = new URL(raw); } catch { url = new URL('https://x.com?' + raw.replace(/^[^?]*/, '')); }
-    const enc = url.searchParams.get('invite');
-    const keyHex = url.hash.startsWith('#k=') ? url.hash.slice(3) : null;
-    if (!enc || !keyHex) throw new Error('Lien sans clé de déchiffrement');
-    const p = await decryptInviteToken(enc, keyHex);
+    const enc = url.searchParams.get('i') || url.searchParams.get('invite');
+    const keyB64 = url.hash.startsWith('#k=') ? url.hash.slice(3) : null;
+    if (!enc || !keyB64) throw new Error('Lien sans clé de déchiffrement');
+    const p = await decryptInviteToken(enc, keyB64);
     if (p?.kind === 'doorkeys.invite') { pendingInvite = p; openInvitePreview(p); }
     else throw new Error();
   } catch { toast('Lien invalide ou clé manquante'); }
