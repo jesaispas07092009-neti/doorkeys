@@ -3026,7 +3026,7 @@ function renderShares() {
       </div>
     </div>`;
   }).join('');
-  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); const key = b.dataset.key ? '#k=' + b.dataset.key : ''; await copyText(baseUrl() + '?i=' + encodeURIComponent(b.dataset.token) + key, 'Lien copié'); }));
+  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); const key = b.dataset.key ? '&k=' + b.dataset.key : ''; await copyText(baseUrl() + '?i=' + encodeURIComponent(b.dataset.token) + key, 'Lien copié'); }));
   
   $$('[data-action="revokeShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
@@ -4000,7 +4000,7 @@ async function buildEncryptedInviteLink(a) {
   combined.set(new Uint8Array(cipher), 12);
   const token = b64uFromBytes(combined);
   const keyB64 = b64uFromBytes(new Uint8Array(rawKey));
-  return { token, link: `${baseUrl()}?i=${token}#k=${keyB64}` };
+  return { token, link: `${baseUrl()}?i=${token}&k=${keyB64}` };
 }
 async function decryptInviteToken(token, keyB64) {
   try {
@@ -4035,7 +4035,7 @@ function refreshSharePreview() {
   const codeWarning = hasCode
     ? `<div class="small" style="color:var(--gold)">⚠️ Digicode inclus — utilise uniquement WhatsApp, Telegram, SMS, Signal ou E-mail</div>`
     : '';
-  E.sharePreview.innerHTML = `<strong>${esc(a.name)}</strong><div class="small">Champs partagés : ${fields}</div><div class="small" style="color:var(--green)">🔒 Lien chiffré — clé dans le fragment URL</div>${codeWarning}`;
+  E.sharePreview.innerHTML = `<strong>${esc(a.name)}</strong><div class="small">Champs partagés : ${fields}</div><div class="small" style="color:var(--green)">🔒 Lien chiffré de bout en bout</div>${codeWarning}`;
   // Désactiver les plateformes risquées (bots de preview) quand le digicode est inclus
   const riskyBtns = [E.twitterBtn, E.messengerBtn, E.linkedinBtn];
   riskyBtns.forEach(btn => {
@@ -4056,15 +4056,15 @@ async function createAndCopyInvite() {
   const a = byId(E.shareAddressSelect.value); if (!a) return toast('Choisis une adresse');
   const { token, link } = await buildEncryptedInviteLink(a);
   const p = buildPayload(a);
-  const keyHex = link.split('#k=')[1] || '';
+  const keyHex = new URL(link).searchParams.get('k') || link.split('#k=')[1] || '';
   state.shares.push({ id: uid(), addressId: a.id, recipientLabel: p.recipientLabel || 'Invitation', permission: 'view', token, keyHex, createdAt: Date.now(), expiresAt: p.expiresAt || 0, revoked: false });
   saveState().catch(() => {}); await copyText(link, 'Lien créé & copié'); renderAll(); closeSheets();
 }
 function inviteFromUrl() {
   const params = new URLSearchParams(location.search);
-  // Nouveau format compact (?i=) ou ancien (?invite=)
   const raw = params.get('i') || params.get('invite');
-  const keyB64 = location.hash.startsWith('#k=') ? location.hash.slice(3) : null;
+  // Clé dans ?k= (query) ou #k= (fragment, rétrocompat)
+  const keyB64 = params.get('k') || (location.hash.startsWith('#k=') ? location.hash.slice(3) : null);
   if (!raw || !keyB64) return null;
   return { _enc: true, token: raw, keyHex: keyB64 };
 }
@@ -4096,8 +4096,10 @@ function importInvite(p) {
   if (exists) { toast('Adresse déjà présente'); closeSheets(); pendingInvite = null; return; }
   addAddress({ ...a, emoji: a.emoji || '🏠', photoId: '', sharedMeta: { sourceWorkspace: p.sourceWorkspace, importedAt: Date.now() } });
   renderAll(); closeSheets(); pendingInvite = null; toast('Adresse importée ✓', 'success');
-  // Nettoyer le fragment de l'URL
-  history.replaceState(null, '', location.pathname + location.search);
+  // Nettoyer les params d'invitation de l'URL
+  const cleanUrl = new URL(location.href);
+  cleanUrl.searchParams.delete('i'); cleanUrl.searchParams.delete('invite'); cleanUrl.searchParams.delete('k');
+  history.replaceState(null, '', cleanUrl.pathname + (cleanUrl.search === '?' ? '' : cleanUrl.search));
 }
 async function openImportByPaste() {
   const raw = await modal({ title: 'Importer par lien', msg: 'Colle le lien d\'invitation reçu.', hasInput: true, inputPlaceholder: 'https://…', inputType: 'text', confirmLabel: 'Importer' });
@@ -4106,7 +4108,7 @@ async function openImportByPaste() {
     let url;
     try { url = new URL(raw); } catch { url = new URL('https://x.com?' + raw.replace(/^[^?]*/, '')); }
     const enc = url.searchParams.get('i') || url.searchParams.get('invite');
-    const keyB64 = url.hash.startsWith('#k=') ? url.hash.slice(3) : null;
+    const keyB64 = url.searchParams.get('k') || (url.hash.startsWith('#k=') ? url.hash.slice(3) : null);
     if (!enc || !keyB64) throw new Error('Lien sans clé de déchiffrement');
     const p = await decryptInviteToken(enc, keyB64);
     if (p?.kind === 'doorkeys.invite') { pendingInvite = p; openInvitePreview(p); }
