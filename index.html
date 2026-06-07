@@ -166,6 +166,20 @@ a { color: inherit; text-decoration: none }
 }
 .lock-name em { color: var(--gold); font-style: italic }
 .lock-subtitle { font-size: 13px; color: var(--text2) }
+.lock-preview {
+  margin-top: 20px; padding: 14px 18px; border-radius: 16px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  text-align: center; width: 260px; animation: fadeSlideUp .5s .2s ease both;
+}
+.lock-preview-label { font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 8px }
+.lock-preview-name { font-family: var(--serif); font-size: 20px; color: var(--text);
+  margin-bottom: 4px; letter-spacing: -.01em }
+.lock-preview-meta { font-size: 12px; color: var(--text2); display: flex;
+  align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap }
+.lock-preview-chip { display: inline-flex; align-items: center; gap: 4px;
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: 999px;
+  padding: 3px 10px; font-size: 11px }
 
 .lock-tabs {
   display: flex; gap: 6px; margin-bottom: 28px;
@@ -421,11 +435,20 @@ a { color: inherit; text-decoration: none }
   content: ''; position: absolute; left: 0; top: 0; bottom: 0;
   width: 3px; border-radius: 3px 0 0 3px; transition: .2s;
 }
+.card-accent-bar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 3px 0 0 3px; pointer-events: none; z-index: 1;
+}
 .addr-card.cat-famille::before { background: var(--red) }
 .addr-card.cat-amis::before   { background: var(--green) }
 .addr-card.cat-boulot::before { background: var(--blue) }
 .addr-card.cat-autre::before  { background: var(--gold) }
 .addr-card:active { transform: scale(.985); border-color: var(--border2) }
+.ripple-effect {
+  position: absolute; border-radius: 50%; background: rgba(255,255,255,.08);
+  transform: scale(0); animation: ripple .5s ease-out forwards; pointer-events: none;
+}
+@keyframes ripple { to { transform: scale(4); opacity: 0 } }
 .addr-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start }
 .addr-main { min-width: 0; flex: 1 }
 .addr-name { font-size: 16px; font-weight: 700; letter-spacing: -.03em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.2 }
@@ -547,9 +570,7 @@ a { color: inherit; text-decoration: none }
   display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
 }
-.form-label .contact-picker-available { color: var(--green); border-color: rgba(82,184,122,.3); background: rgba(82,184,122,.08) }
-.contact-picker-available:active { background: rgba(82,184,122,.15) }
-.auto-badge {
+.form-label .auto-badge {
   display: inline-block; margin-left: 6px; font-size: 9px;
   background: var(--goldBg); border: 1px solid var(--goldLine);
   color: var(--gold); padding: 1px 6px; border-radius: 999px;
@@ -946,6 +967,59 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .map-popup-street { font-size: 11px; color: var(--text2) }
 
 /* ── MODAL ── */
+.arrival-modal {
+  position: absolute; inset: 0; z-index: 450; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 24px; opacity: 0; pointer-events: none;
+  transition: opacity .35s ease; text-align: center;
+}
+.arrival-modal.open { opacity: 1; pointer-events: auto }
+.arrival-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--green); background: rgba(82,184,122,.12); border: 1px solid rgba(82,184,122,.3);
+  border-radius: 999px; padding: 5px 14px; margin-bottom: 20px;
+  animation: fadeSlideUp .4s ease both;
+}
+.arrival-emoji { font-size: 64px; margin-bottom: 16px; animation: fadeSlideUp .4s .05s ease both }
+.arrival-name { font-family: var(--serif); font-size: 34px; letter-spacing: -.02em;
+  line-height: 1.1; margin-bottom: 8px; animation: fadeSlideUp .4s .1s ease both }
+.arrival-address { font-size: 14px; color: var(--text2); margin-bottom: 28px;
+  animation: fadeSlideUp .4s .15s ease both }
+.arrival-fields { display: flex; flex-direction: column; gap: 12px; width: 100%;
+  max-width: 280px; animation: fadeSlideUp .4s .2s ease both }
+.arrival-field {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-radius: 16px; background: var(--bg2);
+  border: 1px solid var(--border2);
+}
+.arrival-field.code { border-color: var(--goldLine); background: var(--goldBg) }
+.arrival-field-label { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px }
+.arrival-field-label i { font-size: 16px }
+.arrival-field-val { font-family: var(--mono); font-size: 22px; font-weight: 700;
+  color: var(--gold); letter-spacing: .06em }
+.arrival-field-val.floor { font-size: 16px; color: var(--text) }
+.arrival-close { margin-top: 24px; font-size: 13px; color: var(--text3);
+  background: none; border: none; cursor: pointer; padding: 8px;
+  animation: fadeSlideUp .4s .3s ease both }
+.arrival-close:active { color: var(--text2) }
+
+.qr-modal {
+  position: absolute; inset: 0; z-index: 500; background: rgba(0,0,0,.85);
+  backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
+  padding: 24px; opacity: 0; pointer-events: none; transition: .25s;
+}
+.qr-modal.open { opacity: 1; pointer-events: auto }
+.qr-box {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px;
+  padding: 28px 24px; text-align: center; width: 100%; max-width: 320px;
+  transform: scale(.94); transition: .25s cubic-bezier(.34,1.56,.64,1);
+}
+.qr-modal.open .qr-box { transform: scale(1) }
+.qr-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px }
+.qr-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; line-height: 1.5 }
+.qr-canvas-wrap { display: flex; justify-content: center; margin-bottom: 20px }
+.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px }
+
 .modal-overlay {
   position: absolute; inset: 0; z-index: 1100;
   background: rgba(0,0,0,.8); backdrop-filter: blur(6px);
@@ -1118,7 +1192,60 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 /* 10. Modal : padding réduit sur petits écrans */
 @media (max-width: 359px) {
-  .modal-overlay { padding: 12px }
+  .arrival-modal {
+  position: absolute; inset: 0; z-index: 450; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 24px; opacity: 0; pointer-events: none;
+  transition: opacity .35s ease; text-align: center;
+}
+.arrival-modal.open { opacity: 1; pointer-events: auto }
+.arrival-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--green); background: rgba(82,184,122,.12); border: 1px solid rgba(82,184,122,.3);
+  border-radius: 999px; padding: 5px 14px; margin-bottom: 20px;
+  animation: fadeSlideUp .4s ease both;
+}
+.arrival-emoji { font-size: 64px; margin-bottom: 16px; animation: fadeSlideUp .4s .05s ease both }
+.arrival-name { font-family: var(--serif); font-size: 34px; letter-spacing: -.02em;
+  line-height: 1.1; margin-bottom: 8px; animation: fadeSlideUp .4s .1s ease both }
+.arrival-address { font-size: 14px; color: var(--text2); margin-bottom: 28px;
+  animation: fadeSlideUp .4s .15s ease both }
+.arrival-fields { display: flex; flex-direction: column; gap: 12px; width: 100%;
+  max-width: 280px; animation: fadeSlideUp .4s .2s ease both }
+.arrival-field {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-radius: 16px; background: var(--bg2);
+  border: 1px solid var(--border2);
+}
+.arrival-field.code { border-color: var(--goldLine); background: var(--goldBg) }
+.arrival-field-label { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px }
+.arrival-field-label i { font-size: 16px }
+.arrival-field-val { font-family: var(--mono); font-size: 22px; font-weight: 700;
+  color: var(--gold); letter-spacing: .06em }
+.arrival-field-val.floor { font-size: 16px; color: var(--text) }
+.arrival-close { margin-top: 24px; font-size: 13px; color: var(--text3);
+  background: none; border: none; cursor: pointer; padding: 8px;
+  animation: fadeSlideUp .4s .3s ease both }
+.arrival-close:active { color: var(--text2) }
+
+.qr-modal {
+  position: absolute; inset: 0; z-index: 500; background: rgba(0,0,0,.85);
+  backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
+  padding: 24px; opacity: 0; pointer-events: none; transition: .25s;
+}
+.qr-modal.open { opacity: 1; pointer-events: auto }
+.qr-box {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px;
+  padding: 28px 24px; text-align: center; width: 100%; max-width: 320px;
+  transform: scale(.94); transition: .25s cubic-bezier(.34,1.56,.64,1);
+}
+.qr-modal.open .qr-box { transform: scale(1) }
+.qr-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px }
+.qr-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; line-height: 1.5 }
+.qr-canvas-wrap { display: flex; justify-content: center; margin-bottom: 20px }
+.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px }
+
+.modal-overlay { padding: 12px }
   .modal-box     { padding: 18px }
 }
 
@@ -1225,6 +1352,8 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
       <span id="biometricLabel">Face ID / Empreinte</span>
     </button>
   </div>
+  <!-- Preview adresse épinglée (nom + étage uniquement, pas le code) -->
+  <div id="lockPreview" class="lock-preview hidden" aria-label="Adresse épinglée" aria-live="polite"></div>
 </div>
 
 <!-- ══ APP SHELL ══ -->
@@ -1517,18 +1646,13 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
     </div>
     <div class="form-row">
       <div class="form-field" id="contactFieldWrap">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <label class="form-label" for="fContact" style="margin-bottom:0">Contact</label>
-          <button type="button" class="btn sm hidden" id="contactPickerBtn" aria-label="Importer depuis les contacts du téléphone" style="height:28px;font-size:11px;padding:0 10px">
-            <i class="ti ti-address-book" aria-hidden="true"></i> Contacts
-          </button>
-        </div>
+        <label class="form-label" for="fContact">Contact <span class="auto-badge">✦ auto</span></label>
         <input class="form-input" id="fContact" placeholder="Prénom" autocomplete="off" aria-autocomplete="list" aria-controls="contactAcList"/>
         <div class="autocomplete-list" id="contactAcList" role="listbox"></div>
       </div>
       <div class="form-field">
         <label class="form-label" for="fPhone">Téléphone</label>
-        <input class="form-input" id="fPhone" placeholder="+33 6…" type="tel" autocomplete="tel"/>
+        <input class="form-input" id="fPhone" placeholder="+33 6…" type="tel"/>
       </div>
     </div>
     <div class="form-field">
@@ -1596,8 +1720,9 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
       </select>
     </div>
     <div class="share-preview" id="sharePreview" aria-live="polite">Choisis une adresse…</div>
-    <div class="btn-row" style="margin-top:14px">
+    <div class="btn-row" style="margin-top:14px;flex-wrap:wrap">
       <button class="btn primary" id="createInviteBtn"><i class="ti ti-send" aria-hidden="true"></i> Créer & copier</button>
+      <button class="btn" id="createQrBtn" aria-label="Générer un QR code"><i class="ti ti-qrcode" aria-hidden="true"></i> QR</button>
     </div>
     <div class="share-social-grid" id="shareSocialGrid">
       <button class="social-btn whatsapp" id="whatsappBtn" aria-label="Partager via WhatsApp"><i class="ti ti-brand-whatsapp"></i><span>WhatsApp</span></button>
@@ -1658,6 +1783,31 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
     <div class="more-item" data-view="settings" role="button" tabindex="0"><i class="ti ti-settings" aria-hidden="true"></i>Réglages</div>
   </div>
 </div>
+<!-- MODE ARRIVÉE IMMINENTE -->
+<div class="arrival-modal" id="arrivalModal" role="dialog" aria-modal="true" aria-label="Mode arrivée">
+  <div class="arrival-badge">📍 Vous êtes à proximité</div>
+  <div class="arrival-emoji" id="arrivalEmoji">🏠</div>
+  <div class="arrival-name" id="arrivalName"></div>
+  <div class="arrival-address" id="arrivalAddress"></div>
+  <div class="arrival-fields" id="arrivalFields"></div>
+  <button class="arrival-close" id="arrivalClose" aria-label="Fermer le mode arrivée">
+    <i class="ti ti-x" aria-hidden="true"></i> Fermer
+  </button>
+</div>
+
+<!-- QR CODE MODAL -->
+<div class="qr-modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+  <div class="qr-box">
+    <div class="qr-title" id="qrTitle">QR Code</div>
+    <div class="qr-sub" id="qrSub"></div>
+    <div class="qr-canvas-wrap"><canvas id="qrCanvas" width="200" height="200" aria-label="QR code"></canvas></div>
+    <div class="btn-row">
+      <button class="btn" id="qrCopyBtn"><i class="ti ti-copy" aria-hidden="true"></i> Copier le lien</button>
+      <button class="btn primary" id="qrCloseBtn"><i class="ti ti-x" aria-hidden="true"></i> Fermer</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /app -->
 
 <!-- Leaflet épinglé @1.9.4 ; defer = non-bloquant -->
@@ -1702,7 +1852,6 @@ const E = {
   fId: $('#fId'), fName: $('#fName'), fAddress: $('#fAddress'), fCode: $('#fCode'),
   fFloor: $('#fFloor'), fIntercom: $('#fIntercom'), fDistrict: $('#fDistrict'),
   fContact: $('#fContact'), fPhone: $('#fPhone'), fNotes: $('#fNotes'),
-  contactPickerBtn: $('#contactPickerBtn'),
   fPhoto: $('#fPhoto'), pickPhotoBtn: $('#pickPhotoBtn'), clearPhotoBtn: $('#clearPhotoBtn'),
   photoName: $('#photoName'), saveAddressBtn: $('#saveAddressBtn'), addrHint: $('#addrHint'),
   detailInner: $('#detailInner'), acList: $('#acList'),
@@ -1880,6 +2029,18 @@ function fmtDate(ts, full = true) {
   if (!ts) return '—';
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', ...(full ? { timeStyle: 'short' } : {}) }).format(new Date(ts));
 }
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Vu aujourd'hui";
+  if (days === 1) return 'Vu hier';
+  if (days < 7) return `Vu il y a ${days}j`;
+  if (days < 30) return `Vu il y a ${Math.floor(days/7)}sem`;
+  if (days < 365) return `Vu il y a ${Math.floor(days/30)}mois`;
+  return `Vu il y a ${Math.floor(days/365)}an`;
+}
+
 function catLabel(c) { return ({ famille: 'Famille', amis: 'Amis', boulot: 'Boulot', autre: 'Autre' })[c] || 'Autre'; }
 function catColor(c) { return ({ famille: 'var(--red)', amis: 'var(--green)', boulot: 'var(--blue)', autre: 'var(--gold)' })[c] || 'var(--gold)'; }
 function shareStatus(s) {
@@ -1964,6 +2125,98 @@ function toast(msg, type = '') {
   toastT = setTimeout(() => E.toast.classList.remove('show'), 2000);
 }
 
+// ── MODE ARRIVÉE IMMINENTE ──
+let arrivalShown = false;
+function openArrivalMode(a) {
+  if (!a) return;
+  const modal = $('#arrivalModal');
+  if (!modal) return;
+  arrivalShown = true;
+  haptic([30, 20, 30]);
+  const nameEl = $('#arrivalName');
+  const addrEl = $('#arrivalAddress');
+  const emojiEl = $('#arrivalEmoji');
+  const fieldsEl = $('#arrivalFields');
+  if (nameEl) nameEl.textContent = a.name || '';
+  if (addrEl) addrEl.textContent = a.address || '';
+  if (emojiEl) emojiEl.textContent = a.emoji || '🏠';
+  const fields = [];
+  if (a.code) fields.push(`
+    <div class="arrival-field code">
+      <div class="arrival-field-label"><i class="ti ti-lock-open" aria-hidden="true"></i> Digicode</div>
+      <div class="arrival-field-val">${esc(a.code)}</div>
+    </div>`);
+  if (a.floor) fields.push(`
+    <div class="arrival-field">
+      <div class="arrival-field-label"><i class="ti ti-building" aria-hidden="true"></i> Étage</div>
+      <div class="arrival-field-val floor">${esc(a.floor)}</div>
+    </div>`);
+  if (a.intercom) fields.push(`
+    <div class="arrival-field">
+      <div class="arrival-field-label"><i class="ti ti-bell" aria-hidden="true"></i> Interphone</div>
+      <div class="arrival-field-val floor">${esc(a.intercom)}</div>
+    </div>`);
+  if (fieldsEl) fieldsEl.innerHTML = fields.join('');
+  modal.classList.add('open');
+  // Copier le code auto dans le presse-papier
+  if (a.code) {
+    navigator.clipboard.writeText(a.code).catch(() => {});
+    toast('Code copié automatiquement ✓', 'copied');
+  }
+}
+function closeArrivalMode() {
+  const modal = $('#arrivalModal');
+  if (modal) modal.classList.remove('open');
+}
+
+// ── QR CODE ──
+let qrCurrentLink = '';
+function openQrModal(link, name) {
+  qrCurrentLink = link;
+  const modal = $('#qrModal');
+  const canvas = $('#qrCanvas');
+  const sub = $('#qrSub');
+  if (!modal || !canvas || !sub) return;
+  sub.textContent = name || 'Scanne pour importer l'adresse';
+  // Dessiner via une image depuis l'API QR (HTTPS, pas de clé, pas de tracking)
+  const size = 200;
+  const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(link)}&bgcolor=ffffff&color=000000&format=png&margin=0`;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#888';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Chargement…', size/2, size/2);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { ctx.clearRect(0, 0, size, size); ctx.drawImage(img, 0, 0, size, size); };
+  img.onerror = () => {
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = '#333';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#e05555';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR non disponible', size/2, size/2 - 8);
+    ctx.fillText('(réseau requis)', size/2, size/2 + 12);
+  };
+  img.src = url;
+  modal.classList.add('open');
+  $('#qrCloseBtn')?.focus();
+}
+function closeQrModal() {
+  const modal = $('#qrModal');
+  if (modal) modal.classList.remove('open');
+  qrCurrentLink = '';
+}
+
+// ── HAPTICS ──
+function haptic(ms = 18) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
 // ── MODAL générique ──
 let modalResolve = null;
 function modal({ title = '', msg = '', confirmLabel = 'Confirmer', confirmClass = 'primary', hasInput = false, inputPlaceholder = '', inputType = 'text' } = {}) {
@@ -2003,10 +2256,12 @@ function lock() {
   showSetupOrUnlock();
   loadLockout();
   if (lockoutUntil > Date.now()) startLockoutTimer();
+  renderLockPreview();
 }
 function unlock() {
   unlocked = true;
   nearbyOverride = null;
+  const lp = $('#lockPreview'); if (lp) lp.classList.add('hidden');
   resetLockout();
   E.lock.classList.add('hiding');
   setTimeout(() => {
@@ -2074,6 +2329,7 @@ async function enterPinDigit(n) {
   if (pin.length >= 8) return;
   if (lockoutUntil > Date.now()) return;
   pin += String(n);
+  haptic(18);
   renderDots(false);
 
   if (pin.length < 4) return;
@@ -2108,6 +2364,7 @@ async function enterPinDigit(n) {
       setTimeout(() => { pin = ''; renderDots(false); E.pinDots.classList.remove('shake'); }, 430);
     }
   } else if (isLastChance) {
+    haptic([40, 30, 40]);
     renderDots(true);
     E.pinDots.classList.add('shake');
     pinAttempts++;
@@ -2156,6 +2413,7 @@ function normalizeAddr(a) {
     lat: typeof a.lat === 'number' ? a.lat : null,
     lng: typeof a.lng === 'number' ? a.lng : null,
     visitLog: Array.isArray(a.visitLog) ? a.visitLog.slice(-200) : [],
+    previousCode: typeof a.previousCode === 'string' ? a.previousCode : '',
   };
 }
 function updateAddress(id, patch) { state.addresses = state.addresses.map(a => a.id === id ? normalizeAddr({ ...a, ...patch, updatedAt: Date.now() }) : a); saveState().catch(() => {}); }
@@ -2191,11 +2449,13 @@ function cardHTML(a) {
   if (a.intercom)chips.push(`<span class="chip"><i class="ti ti-bell" aria-hidden="true"></i>${esc(a.intercom)}</span>`);
   if (a.district)chips.push(`<span class="chip"><i class="ti ti-map-pin" aria-hidden="true"></i>${esc(a.district)}</span>`);
   return `<div class="addr-card cat-${esc(a.category)}" data-id="${a.id}" role="button" tabindex="0" aria-label="Ouvrir la fiche ${esc(a.name)}">
+    ${a.photoId ? '<div class="card-accent-bar"></div>' : ''}
     <div class="addr-top">
       <div class="addr-emoji" aria-hidden="true">${a.emoji || '🏠'}</div>
       <div class="addr-main">
         <div class="addr-name">${esc(a.name || 'Sans nom')}${a.favorite ? ' <span aria-label="Favori" style="font-size:14px">⭐</span>' : ''}</div>
         <div class="addr-address">${esc(a.address || '')}</div>
+        ${a.lastVisited ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${timeAgo(a.lastVisited)}</div>` : ''}
         ${a.contact ? `<div class="addr-contact">${esc(a.contact)}${a.phone ? ' · ' + esc(a.phone) : ''}</div>` : ''}
         ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
       </div>
@@ -2297,6 +2557,7 @@ function renderHome() {
   const recent = [...state.addresses].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
   E.homeRecent.innerHTML = recent.length ? recent.map(cardHTML).join('') : '';
   attachCardListeners(E.homeRecent);
+  if (recent.length) applyDominantColors(E.homeRecent);
 }
 
 // ── QUICK ACCESS BANNER ──
@@ -2346,6 +2607,7 @@ function renderQuickBanner() {
         else { span.textContent = '●●●●'; span.classList.add('masked'); return; }
       }
       navigator.clipboard.writeText(el.dataset.val).catch(() => {});
+      haptic(30);
       const fl = $(`#qcf-${el.dataset.id}`, E.quickBanner);
       if (fl) { fl.classList.add('show'); setTimeout(() => fl.classList.remove('show'), 1200); }
       toast('Code copié', 'copied');
@@ -2389,6 +2651,7 @@ function wrapWithSwipe(container) {
       if (curX < -60) {
         // Supprimer avec animation
         card.style.transition = 'transform .22s ease, opacity .22s ease';
+        haptic(40);
         card.style.transform = 'translateX(-110%)';
         card.style.opacity = '0';
         const id = card.dataset.id;
@@ -2443,12 +2706,24 @@ function attachCardListeners(container) {
         e.stopPropagation();
         const chip = e.target.closest('[data-action="copyCode"]');
         navigator.clipboard.writeText(chip.dataset.code).catch(() => {});
+        haptic(30);
         const fl = $(`#cf-${c.dataset.id}`, container);
         if (fl) { fl.classList.add('show'); setTimeout(() => fl.classList.remove('show'), 1200); }
         toast('Code copié', 'copied'); return;
       }
       openDetail(c.dataset.id);
     };
+    c.addEventListener('pointerdown', e => {
+      const rect = c.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const x = e.clientX - rect.left - size/2;
+      const y = e.clientY - rect.top - size/2;
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple-effect';
+      ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+      c.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    });
     c.addEventListener('click', handler);
     c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(e); } });
   });
@@ -2470,6 +2745,7 @@ function renderList(view) {
     return cardHTML(a).replace('<div class="addr-card', `<div class="addr-card" style="animation:fadeSlideUp .3s ${delay}s ease both"`);
   }).join('');
   attachCardListeners(list);
+  applyDominantColors(list); // async, non-bloquant
   // Hint swipe — affiché une seule fois
   if (!localStorage.getItem('dk_swipe_hint_seen') && arr.length >= 1 && view !== 'favorites') {
     const hint = document.createElement('div');
@@ -2625,53 +2901,6 @@ async function geocodeAddress(address) {
 
 // ── AUTOCOMPLÉTION adresse (fallback + gestion erreurs) ──
 let acTimer = null, acCurrentValue = '';
-// ── CONTACT PICKER API (Android Chrome) ──
-function initContactPicker() {
-  // Vérifier support Contact Picker API (Android Chrome uniquement)
-  const supported = 'contacts' in navigator && 'ContactsManager' in window;
-  const btn = $('#contactPickerBtn');
-  if (!btn) return;
-
-  if (supported) {
-    // Android Chrome : bouton actif avec style vert
-    btn.classList.remove('hidden');
-    btn.classList.add('contact-picker-available');
-    btn.addEventListener('click', async () => {
-      try {
-        const contacts = await navigator.contacts.select(
-          ['name', 'tel'],
-          { multiple: false }
-        );
-        if (!contacts || !contacts.length) return;
-        const c = contacts[0];
-        const name = Array.isArray(c.name) ? c.name[0] : (c.name || '');
-        const tel  = Array.isArray(c.tel)  ? c.tel[0]  : (c.tel  || '');
-        if (name) {
-          E.fContact.value = name.trim();
-          E.fContact.classList.add('auto-filled');
-        }
-        if (tel) {
-          E.fPhone.value = tel.trim();
-          E.fPhone.classList.add('auto-filled');
-        }
-        // Vider la liste d'autocomplétion
-        const list = $('#contactAcList');
-        if (list) list.innerHTML = '';
-        toast('Contact importé ✓', 'success');
-      } catch (err) {
-        // L'utilisateur a annulé ou permission refusée — pas d'erreur visible
-        if (err.name !== 'AbortError') {
-          toast('Impossible d'accéder aux contacts');
-        }
-      }
-    });
-  } else {
-    // iOS Safari / navigateurs non supportés : bouton caché
-    // Le champ téléphone a autocomplete="tel" pour suggestion navigateur
-    btn.classList.add('hidden');
-  }
-}
-
 // ── AUTOCOMPLÉTION contact (locale, depuis state.addresses) ──
 let contactAcTimer = null;
 function normContact(s) {
@@ -2704,7 +2933,7 @@ function renderContactDropdown(suggestions) {
   const list = $('#contactAcList');
   if (!list) return;
   if (!suggestions.length) {
-    list.innerHTML = ''; // Silencieux si pas de contacts dans l'app
+    list.innerHTML = '<div class="ac-empty">Aucun contact enregistré</div>';
     return;
   }
   list.innerHTML = suggestions.map(s =>
@@ -2775,8 +3004,6 @@ function initAutocomplete() {
     if (!e.target.closest('#addressFieldWrap')) E.acList.innerHTML = '';
     if (!e.target.closest('#contactFieldWrap')) { const list = $('#contactAcList'); if (list) list.innerHTML = ''; }
   });
-  // Initialiser le Contact Picker (Android) ou fallback (iOS)
-  initContactPicker();
 }
 async function fetchAddressSuggestions(q) {
   if (q !== acCurrentValue) return;
@@ -2932,6 +3159,79 @@ function updateNearbyFromCoords(lat, lng) {
   }
 }
 
+// ── COULEUR DOMINANTE PHOTO ──
+// Cache en mémoire pour éviter de recalculer à chaque render
+const dominantColorCache = new Map();
+async function extractDominantColor(photoId) {
+  if (!photoId) return null;
+  if (dominantColorCache.has(photoId)) return dominantColorCache.get(photoId);
+  try {
+    const dataUrl = await getPhoto(photoId);
+    if (!dataUrl) return null;
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 20; canvas.height = 20; // petit pour la perf
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 20, 20);
+        const data = ctx.getImageData(0, 0, 20, 20).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          // Ignorer les pixels trop sombres ou trop clairs
+          const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+          if (brightness < 30 || brightness > 220) continue;
+          r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+        }
+        if (!count) { resolve(null); return; }
+        r = Math.round(r/count); g = Math.round(g/count); b = Math.round(b/count);
+        const color = `rgb(${r},${g},${b})`;
+        dominantColorCache.set(photoId, color);
+        if (dominantColorCache.size > 100) dominantColorCache.delete(dominantColorCache.keys().next().value);
+        resolve(color);
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  } catch { return null; }
+}
+// Appliquer la couleur dominante sur une card après son rendu
+async function applyDominantColors(container) {
+  const cards = $$('[data-id]', container);
+  for (const card of cards) {
+    const a = byId(card.dataset.id);
+    if (!a?.photoId) continue;
+    const color = await extractDominantColor(a.photoId);
+    if (!color) continue;
+    // Appliquer sur la barre de gauche (::before via style direct sur la card)
+    card.style.setProperty('--card-accent', color);
+    // Trouver le ::before via un élément overlay
+    const bar = card.querySelector('.card-accent-bar');
+    if (bar) bar.style.background = color;
+  }
+}
+
+// ── LOCK SCREEN PREVIEW ──
+function renderLockPreview() {
+  const el = $('#lockPreview');
+  if (!el) return;
+  const pid = state.settings?.pinnedAddressId;
+  if (!pid || !isSetup()) { el.classList.add('hidden'); return; }
+  // Lire l'adresse depuis l'état DÉCHIFFRÉ si disponible, sinon depuis un cache non-sensible
+  // On affiche uniquement nom + étage + district (pas le code)
+  const a = byId(pid);
+  if (!a) { el.classList.add('hidden'); return; }
+  const chips = [];
+  if (a.floor)    chips.push(`<span class="lock-preview-chip"><i class="ti ti-building" aria-hidden="true" style="font-size:12px"></i>${esc(a.floor)}</span>`);
+  if (a.district) chips.push(`<span class="lock-preview-chip"><i class="ti ti-map-pin" aria-hidden="true" style="font-size:12px"></i>${esc(a.district)}</span>`);
+  el.innerHTML = `
+    <div class="lock-preview-label">⚡ Accès rapide</div>
+    <div class="lock-preview-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
+    ${chips.length ? `<div class="lock-preview-meta">${chips.join('')}</div>` : ''}
+  `;
+  el.classList.remove('hidden');
+}
+
 // ── DÉTECTION GPS AU DÉVERROUILLAGE ──
 function detectNearbyAddress() {
   if (!state.addresses.length) return;
@@ -2948,6 +3248,10 @@ function detectNearbyAddress() {
     if (nearest && minDist < 0.3) { // moins de 300m
       nearbyOverride = nearest;
       renderQuickBanner();
+      // Mode arrivée imminente si < 100m et pas encore affiché cette session
+      if (minDist < 0.1 && !arrivalShown) {
+        setTimeout(() => openArrivalMode(nearest), 800);
+      }
     }
   }, () => {}, { timeout: 4000, maximumAge: 60000, enableHighAccuracy: false });
 }
@@ -3094,7 +3398,7 @@ function renderDistricts() {
   state.addresses.forEach(a => { const k = a.district || ''; (groups[k] || (groups[k] = [])).push(a); });
   const noDistrict = groups[''] || [];
   delete groups[''];
-  const sorted = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b, 'fr'));
+  const sorted = Object.entries(groups).sort(([a, va], [b, vb]) => vb.length - va.length || a.localeCompare(b, 'fr'));
   let html = '';
   if (!sorted.length && !noDistrict.length) {
     html = `<div class="empty-state"><i class="ti ti-building" aria-hidden="true"></i><h3>Aucun quartier</h3><p>Le quartier est détecté automatiquement depuis l'adresse.</p></div>`;
@@ -3186,6 +3490,13 @@ async function renderDetail(a) {
       <button class="btn" data-action="mapsDetail"><i class="ti ti-map-pin" aria-hidden="true"></i> Maps</button>
       ${a.phone ? `<a href="tel:${esc(a.phone)}" class="btn tel" aria-label="Appeler ${esc(a.contact || a.phone)}"><i class="ti ti-phone" aria-hidden="true"></i> Appeler</a>` : ''}
     </div>
+    ${a.previousCode ? `<div class="detail-row" style="opacity:.65">
+      <div class="l"><i class="ti ti-history" aria-hidden="true"></i> Ancien code</div>
+      <div class="r" style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:var(--mono);font-size:13px;color:var(--text2);letter-spacing:.05em">${esc(a.previousCode)}</span>
+        <button class="round-btn" onclick="navigator.clipboard.writeText('${esc(a.previousCode)}').catch(()=>{});haptic(25);toast('Ancien code copié','copied')" title="Copier l'ancien code" aria-label="Copier l'ancien code"><i class="ti ti-copy"></i></button>
+      </div>
+    </div>` : ''}
     ${a.code ? `<div class="detail-row">
       <div class="l"><i class="ti ti-lock-open" aria-hidden="true"></i> Digicode</div>
       <div class="r" style="display:flex;align-items:center;gap:8px">
@@ -3234,6 +3545,7 @@ E.detailInner.addEventListener('click', e => {
       el.setAttribute('aria-label', 'Toucher pour révéler le digicode');
       clearTimeout(codeRevealTimer); revealElId = '';
     } else {
+      haptic(25);
       el.dataset.rev = '1';
       el.innerHTML = `<span style="font-family:var(--mono);font-size:15px;letter-spacing:.08em">${esc(a.code)}</span><div class="code-timer-bar"><div class="code-timer-fill" id="ctf-${a.id}"></div></div>`;
       el.setAttribute('aria-label', `Digicode : ${a.code}. Masquage automatique dans 5 secondes`);
@@ -3260,7 +3572,6 @@ E.detailInner.addEventListener('click', e => {
 // ── ÉDITEUR ──
 function openEditor(id) {
   editId = id || ''; editPhoto = ''; editPhotoId = ''; editCat = 'autre'; editEmoji = '🏠';
-  const _clist = $('#contactAcList'); if (_clist) _clist.innerHTML = '';
   E.editorTitle.textContent = id ? 'Modifier' : 'Nouvelle adresse';
   E.fId.value = id || ''; E.fAddress.dataset.lat = ''; E.fAddress.dataset.lng = '';
   [E.fName, E.fAddress, E.fCode, E.fFloor, E.fIntercom, E.fDistrict, E.fContact, E.fPhone, E.fNotes].forEach(f => f.value = '');
@@ -3309,11 +3620,13 @@ async function saveEditor() {
     await deletePhoto(current.photoId).catch(() => {});
     photoId = '';
   }
+  const newCode = E.fCode.value.trim();
+  const prevCode = (current && current.code && current.code !== newCode) ? current.code : (current?.previousCode || '');
   const data = {
     id: editId || uid(), name, address: addr, category: editCat, emoji: editEmoji,
     contact: E.fContact.value.trim(), phone: E.fPhone.value.trim(),
     floor: E.fFloor.value.trim(), intercom: E.fIntercom.value.trim(),
-    code: E.fCode.value.trim(), district: E.fDistrict.value.trim(),
+    code: newCode, previousCode: prevCode, district: E.fDistrict.value.trim(),
     notes: E.fNotes.value.trim(), photoId,
     favorite: current ? !!current.favorite : false,
     visits: current ? (current.visits || 0) : 0,
@@ -3862,6 +4175,15 @@ $$('.more-item[data-view]', document).forEach(b => b.addEventListener('click', (
 E.closeShare.addEventListener('click', closeSheets);
 E.closeImport.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
 E.createInviteBtn.addEventListener('click', createAndCopyInvite);
+$('#createQrBtn')?.addEventListener('click', async () => {
+  const a = byId(E.shareAddressSelect.value);
+  if (!a) return toast('Choisis une adresse');
+  const p = buildPayload(a);
+  const { ciphertext, iv, key: shareKey } = await encryptInvitePayload(p);
+  const token = b64enc(JSON.stringify({ ct: ciphertext, iv }));
+  const link = baseUrl() + '?invite=' + encodeURIComponent(token) + '#k=' + encodeURIComponent(shareKey);
+  openQrModal(link, a.name);
+});
 // ── SOCIAL SHARE HANDLERS ──
 async function buildShareText(a) {
   const { link } = await buildEncryptedInviteLink(a);
@@ -4207,6 +4529,15 @@ function bioRefreshToggle() {
   const bioToggle = $('#biometricToggle');
   if (bioToggle) bioToggle.checked = !!localStorage.getItem(BIO_CRED_KEY);
 }
+
+// ── ARRIVAL EVENTS ──
+$('#arrivalClose')?.addEventListener('click', closeArrivalMode);
+$('#arrivalModal')?.addEventListener('click', e => { if (e.target === $('#arrivalModal')) closeArrivalMode(); });
+
+// ── QR EVENTS ──
+$('#qrCloseBtn')?.addEventListener('click', closeQrModal);
+$('#qrCopyBtn')?.addEventListener('click', () => { if (qrCurrentLink) { navigator.clipboard.writeText(qrCurrentLink).catch(() => {}); haptic(30); toast('Lien copié', 'copied'); } });
+$('#qrModal')?.addEventListener('click', e => { if (e.target === $('#qrModal')) closeQrModal(); });
 
 // ── INIT ──
 async function init() {
