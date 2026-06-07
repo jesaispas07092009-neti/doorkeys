@@ -2845,14 +2845,35 @@ function renderMap() {
       btn.addEventListener('click', () => {
         if (!navigator.geolocation) return toast('Géolocalisation non disponible');
         btn.classList.add('locating');
+        // 1) Position rapide via réseau/cache (< 1s)
         navigator.geolocation.getCurrentPosition(
           pos => {
             updateUserMarker(pos.coords.latitude, pos.coords.longitude);
             leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
             btn.classList.remove('locating');
+            // 2) Affiner silencieusement avec GPS haute précision
+            navigator.geolocation.getCurrentPosition(
+              pos2 => {
+                updateUserMarker(pos2.coords.latitude, pos2.coords.longitude);
+                leafletMap.setView([pos2.coords.latitude, pos2.coords.longitude], 16);
+              },
+              () => {},
+              { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
           },
-          () => { btn.classList.remove('locating'); toast('Position indisponible'); },
-          { enableHighAccuracy: true, timeout: 10000 }
+          () => {
+            // Fallback : tente quand même le GPS
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                updateUserMarker(pos.coords.latitude, pos.coords.longitude);
+                leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
+                btn.classList.remove('locating');
+              },
+              () => { btn.classList.remove('locating'); toast('Position indisponible'); },
+              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+          },
+          { enableHighAccuracy: false, timeout: 3000, maximumAge: 30000 }
         );
       });
     }
@@ -4179,10 +4200,7 @@ E.createInviteBtn.addEventListener('click', createAndCopyInvite);
 $('#createQrBtn')?.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value);
   if (!a) return toast('Choisis une adresse');
-  const p = buildPayload(a);
-  const { ciphertext, iv, key: shareKey } = await encryptInvitePayload(p);
-  const token = b64enc(JSON.stringify({ ct: ciphertext, iv }));
-  const link = baseUrl() + '?invite=' + encodeURIComponent(token) + '#k=' + encodeURIComponent(shareKey);
+  const { link } = await buildEncryptedInviteLink(a);
   openQrModal(link, a.name);
 });
 // ── SOCIAL SHARE HANDLERS ──
