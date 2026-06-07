@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1514,9 +1515,10 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
       </div>
     </div>
     <div class="form-row">
-      <div class="form-field">
-        <label class="form-label" for="fContact">Contact</label>
-        <input class="form-input" id="fContact" placeholder="Prénom"/>
+      <div class="form-field" id="contactFieldWrap">
+        <label class="form-label" for="fContact">Contact <span class="auto-badge">✦ auto</span></label>
+        <input class="form-input" id="fContact" placeholder="Prénom" autocomplete="off" aria-autocomplete="list" aria-controls="contactAcList"/>
+        <div class="autocomplete-list" id="contactAcList" role="listbox"></div>
       </div>
       <div class="form-field">
         <label class="form-label" for="fPhone">Téléphone</label>
@@ -2616,6 +2618,61 @@ async function geocodeAddress(address) {
 
 // ── AUTOCOMPLÉTION adresse (fallback + gestion erreurs) ──
 let acTimer = null, acCurrentValue = '';
+// ── AUTOCOMPLÉTION contact (locale, depuis state.addresses) ──
+let contactAcTimer = null;
+function normContact(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+function buildContactSuggestions(query) {
+  const q = normContact(query);
+  if (!q) return [];
+  const seen = new Set();
+  const results = [];
+  for (const a of state.addresses) {
+    if (!a.contact) continue;
+    const key = normContact(a.contact) + '|' + String(a.phone || '').replace(/\s/g, '');
+    if (seen.has(key)) continue;
+    if (!normContact(a.contact).includes(q)) continue;
+    seen.add(key);
+    results.push({ contact: a.contact, phone: a.phone || '' });
+  }
+  results.sort((a, b) => a.contact.localeCompare(b.contact, 'fr'));
+  return results.slice(0, 5);
+}
+function maskPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return phone;
+  // Garder les 2 premiers et 2 derniers chiffres, masquer le reste
+  if (digits.length <= 4) return phone;
+  return digits.slice(0, 2) + ' •• •• •• ' + digits.slice(-2);
+}
+function renderContactDropdown(suggestions) {
+  const list = $('#contactAcList');
+  if (!list) return;
+  if (!suggestions.length) {
+    list.innerHTML = '<div class="ac-empty">Aucun contact enregistré</div>';
+    return;
+  }
+  list.innerHTML = suggestions.map(s =>
+    `<div class="autocomplete-item" tabindex="0" role="option"
+      data-contact="${esc(s.contact)}" data-phone="${esc(s.phone)}">
+      <strong>${esc(s.contact)}</strong>
+      ${s.phone ? `<div class="ac-sub">${esc(maskPhone(s.phone))}</div>` : ''}
+    </div>`
+  ).join('');
+  $$('.autocomplete-item', list).forEach(item => {
+    const sel = () => {
+      E.fContact.value = item.dataset.contact;
+      E.fPhone.value = item.dataset.phone;
+      E.fContact.classList.add('auto-filled');
+      E.fPhone.classList.add('auto-filled');
+      list.innerHTML = '';
+      E.fContact.focus();
+    };
+    item.addEventListener('click', sel);
+    item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sel(); } });
+  });
+}
 function initAutocomplete() {
   E.fAddress.addEventListener('input', () => {
     const v = E.fAddress.value.trim(); acCurrentValue = v;
@@ -2634,7 +2691,36 @@ function initAutocomplete() {
     if (e.key === 'ArrowUp') { const p = document.activeElement.previousElementSibling; if (p) { e.preventDefault(); p.focus(); } else { e.preventDefault(); E.fAddress.focus(); } }
     if (e.key === 'Escape') { E.acList.innerHTML = ''; E.fAddress.focus(); }
   });
-  document.addEventListener('click', e => { if (!e.target.closest('#addressFieldWrap')) E.acList.innerHTML = ''; });
+  // Contact autocomplete listeners
+  E.fContact.addEventListener('input', () => {
+    const v = E.fContact.value;
+    E.fContact.classList.remove('auto-filled');
+    E.fPhone.classList.remove('auto-filled');
+    clearTimeout(contactAcTimer);
+    const list = $('#contactAcList');
+    if (!v.trim()) { if (list) list.innerHTML = ''; return; }
+    contactAcTimer = setTimeout(() => {
+      const suggestions = buildContactSuggestions(v);
+      renderContactDropdown(suggestions);
+    }, 150);
+  });
+  E.fContact.addEventListener('keydown', e => {
+    const list = $('#contactAcList');
+    if (e.key === 'Escape') { if (list) list.innerHTML = ''; return; }
+    if (e.key === 'ArrowDown') { const f = list && $('.autocomplete-item', list); if (f) { e.preventDefault(); f.focus(); } }
+  });
+  const contactList = $('#contactAcList');
+  if (contactList) {
+    contactList.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { const n = document.activeElement.nextElementSibling; if (n) { e.preventDefault(); n.focus(); } }
+      if (e.key === 'ArrowUp') { const p = document.activeElement.previousElementSibling; if (p) { e.preventDefault(); p.focus(); } else { e.preventDefault(); E.fContact.focus(); } }
+      if (e.key === 'Escape') { contactList.innerHTML = ''; E.fContact.focus(); }
+    });
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#addressFieldWrap')) E.acList.innerHTML = '';
+    if (!e.target.closest('#contactFieldWrap')) { const list = $('#contactAcList'); if (list) list.innerHTML = ''; }
+  });
 }
 async function fetchAddressSuggestions(q) {
   if (q !== acCurrentValue) return;
@@ -3121,9 +3207,11 @@ function openEditor(id) {
   E.editorTitle.textContent = id ? 'Modifier' : 'Nouvelle adresse';
   E.fId.value = id || ''; E.fAddress.dataset.lat = ''; E.fAddress.dataset.lng = '';
   [E.fName, E.fAddress, E.fCode, E.fFloor, E.fIntercom, E.fDistrict, E.fContact, E.fPhone, E.fNotes].forEach(f => f.value = '');
-  [E.fAddress, E.fDistrict].forEach(f => f.classList.remove('auto-filled'));
+  [E.fAddress, E.fDistrict, E.fContact, E.fPhone].forEach(f => f.classList.remove('auto-filled'));
   E.addrHint.style.display = 'none';
-  E.acList.innerHTML = ''; E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden');
+  E.acList.innerHTML = '';
+  const _cAcList = $('#contactAcList'); if (_cAcList) _cAcList.innerHTML = '';
+  E.photoName.textContent = 'Aucune photo'; E.clearPhotoBtn.classList.add('hidden');
   $$('.cat-opt').forEach(b => { b.classList.toggle('active', b.dataset.cat === 'autre'); b.setAttribute('aria-checked', String(b.dataset.cat === 'autre')); });
   $$('.emoji-opt').forEach(b => { b.classList.toggle('active', b.dataset.emoji === '🏠'); b.setAttribute('aria-checked', String(b.dataset.emoji === '🏠')); });
   E.deleteFromEditor.classList.toggle('hidden', !id);
