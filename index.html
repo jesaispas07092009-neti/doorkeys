@@ -1811,6 +1811,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 <!-- Leaflet épinglé @1.9.4 ; defer = non-bloquant -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -2445,16 +2446,31 @@ function openQrModal(link, name) {
   const sub = $('#qrSub');
   if (!modal || !canvas || !sub) return;
   sub.textContent = name || `Scanne pour importer l'adresse`;
+  const dpr = window.devicePixelRatio || 1;
   const size = 280;
-  canvas.width = size; canvas.height = size;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
   try {
-    QRLocal.draw(link, canvas, '#000000', '#ffffff');
+    QRCode.toCanvas(canvas, link, {
+      width: size * dpr,
+      margin: 2,
+      errorCorrectionLevel: 'L',
+      color: { dark: '#000000', light: '#ffffff' }
+    }, (err) => {
+      if (err) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#e05555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('QR non disponible', canvas.width/2, canvas.height/2);
+      }
+    });
   } catch(e) {
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = '#e05555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('QR non disponible', size/2, size/2 - 8);
-    ctx.fillText('(lien trop long)', size/2, size/2 + 12);
+    ctx.fillText('QR non disponible', canvas.width/2, canvas.height/2);
   }
   modal.classList.add('open');
   $('#qrCloseBtn')?.focus();
