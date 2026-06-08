@@ -1014,14 +1014,14 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .qr-modal.open { opacity: 1; pointer-events: auto }
 .qr-box {
   background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px;
-  padding: 28px 20px; text-align: center; width: 100%; max-width: 400px;
+  padding: 28px 24px; text-align: center; width: 100%; max-width: 320px;
   transform: scale(.94); transition: .25s cubic-bezier(.34,1.56,.64,1);
 }
 .qr-modal.open .qr-box { transform: scale(1) }
 .qr-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px }
 .qr-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; line-height: 1.5 }
 .qr-canvas-wrap { display: flex; justify-content: center; margin-bottom: 20px }
-.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 6px; max-width: 100% }
+.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px }
 
 .modal-overlay {
   position: absolute; inset: 0; z-index: 1100;
@@ -1239,14 +1239,14 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .qr-modal.open { opacity: 1; pointer-events: auto }
 .qr-box {
   background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px;
-  padding: 28px 20px; text-align: center; width: 100%; max-width: 400px;
+  padding: 28px 24px; text-align: center; width: 100%; max-width: 320px;
   transform: scale(.94); transition: .25s cubic-bezier(.34,1.56,.64,1);
 }
 .qr-modal.open .qr-box { transform: scale(1) }
 .qr-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px }
 .qr-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; line-height: 1.5 }
 .qr-canvas-wrap { display: flex; justify-content: center; margin-bottom: 20px }
-.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 6px; max-width: 100% }
+.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px }
 
 .modal-overlay { padding: 12px }
   .modal-box     { padding: 18px }
@@ -2183,8 +2183,28 @@ const QRLocal = (() => {
 
   // Encodage alphanumérique / byte
   const ALPHA='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+  // Capacités alphanumérique EC=L (data codewords) — versions 1-40
+  const CAPS_ALPHA=[[],[25,7],[47,10],[77,15],[114,20],[154,26],[195,18],[224,20],[279,24],[335,30],[395,18],[468,20],[535,24],[619,26],[667,30],[758,22],[854,24],[938,28],[1046,30],[1153,28],[1249,28],[1352,28],[1460,28],[1588,30],[1704,30],[1853,26],[1990,28],[2132,30],[2223,30],[2369,30],[2520,30],[2677,30],[2840,30],[3009,30],[3183,30],[3351,30],[3537,30],[3729,30],[3927,30],[4087,30],[4296,30]];
+  function encodeAlphanumeric(text) {
+    // QR alphanumérique : paires de 2 chars encodées en 11 bits, seul en 6 bits
+    const bits = [];
+    const push = (v, n) => { for (let i = n-1; i >= 0; i--) bits.push((v>>i)&1); };
+    push(0b0010, 4); // mode alphanumérique
+    push(text.length, 9);
+    for (let i = 0; i < text.length - 1; i += 2) {
+      const v = ALPHA.indexOf(text[i]) * 45 + ALPHA.indexOf(text[i+1]);
+      push(v, 11);
+    }
+    if (text.length % 2) push(ALPHA.indexOf(text[text.length-1]), 6);
+    return { bits, len: text.length, mode: 'alpha' };
+  }
   function encode(text){
-    // Force byte encoding (UTF-8)
+    // Tente le mode alphanumérique si tous les chars sont dans ALPHA (QR spec §7.4.4)
+    // Le mode alphanumérique génère des QR codes moins denses car plus efficace
+    const upperText = text.toUpperCase();
+    const canAlpha = [...upperText].every(c => ALPHA.includes(c));
+    if (canAlpha) return encodeAlphanumeric(upperText);
+    // Sinon : byte encoding (UTF-8)
     const bytes=[...new TextEncoder().encode(text)];
     const bits=[];
     const push=(v,n)=>{ for(let i=n-1;i>=0;i--) bits.push((v>>i)&1); };
@@ -2200,9 +2220,10 @@ const QRLocal = (() => {
   // Positions des alignment patterns par version
   const ALIGN=[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]];
 
-  function bestVersion(bits){
+  function bestVersion(bits, mode){
+    const capsTable = mode === 'alpha' ? CAPS_ALPHA : CAPS;
     for(let v=1;v<=40;v++){
-      const cap=CAPS[v]; if(!cap) continue;
+      const cap=capsTable[v]; if(!cap) continue;
       const needed=Math.ceil((bits+4)/8);
       if(needed<=cap[0]) return v;
     }
@@ -2367,10 +2388,11 @@ const QRLocal = (() => {
   ];
 
   function generate(text){
-    const {bits} = encode(text);
-    const v = bestVersion(bits.length);
+    const {bits, mode} = encode(text);
+    const v = bestVersion(bits.length, mode);
     if(!v) return null;
-    const [dataCW] = CAPS[v];
+    const capsTable = mode === 'alpha' ? CAPS_ALPHA : CAPS;
+    const [dataCW] = capsTable[v];
     const [g1b,g1d,g2b,g2d,ecPer] = RS_BLOCKS[v];
     // Pad bits
     const allBits=[...bits,0,0,0,0];
@@ -2421,16 +2443,15 @@ const QRLocal = (() => {
   }
 
   return {
-    // cssSize : taille logique (CSS pixels) souhaitée pour le canvas
-    draw(text, canvas, fg='#000000', bg='#ffffff', cssSize=280){
+    draw(text, canvas, fg='#000000', bg='#ffffff'){
       const m=generate(text);
       if(!m){ console.error('QR: texte trop long'); return; }
       const n=m.length, quiet=4;
       const total=n+quiet*2;
-      // Calcul de la cellule depuis la taille CSS logique (pas les pixels physiques)
-      const cell=Math.max(2, Math.floor(cssSize/total));
+      // Cellule entière (pas de décimale) pour éviter les artefacts de rendu
+      const cell=Math.floor(canvas.width/total);
       const sz=cell*total;
-      // Appliquer le Device Pixel Ratio une seule fois ici
+      // Adapter au Device Pixel Ratio (écrans Retina/HD)
       const dpr=window.devicePixelRatio||1;
       canvas.width=sz*dpr; canvas.height=sz*dpr;
       canvas.style.width=sz+'px'; canvas.style.height=sz+'px';
@@ -2451,17 +2472,19 @@ function openQrModal(link, name) {
   const sub = $('#qrSub');
   if (!modal || !canvas || !sub) return;
   sub.textContent = name || `Scanne pour importer l'adresse`;
-  // Ne pas pré-dimensionner le canvas ici : draw() s'en charge entièrement
+  const dpr = window.devicePixelRatio || 1;
+  const size = 280;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
   try {
-    QRLocal.draw(link, canvas, '#000000', '#ffffff', 360);
+    QRLocal.draw(link, canvas, '#000000', '#ffffff');
   } catch(e) {
-    const size = 280;
-    canvas.width = size; canvas.height = size;
-    canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,size,size);
-    ctx.fillStyle = '#e05555'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('QR non disponible', size/2, size/2);
+    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#e05555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('QR non disponible', canvas.width/2, canvas.height/2);
   }
   modal.classList.add('open');
   $('#qrCloseBtn')?.focus();
@@ -3039,7 +3062,25 @@ function renderShares() {
       </div>
     </div>`;
   }).join('');
-  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); const key = b.dataset.key ? '&k=' + b.dataset.key : ''; await copyText(baseUrl() + '?i=' + encodeURIComponent(b.dataset.token) + key, 'Lien copié'); }));
+  $$('[data-action="copyShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation();
+    const token = b.dataset.token;
+    const key = b.dataset.key || '';
+    let link;
+    // Nouveau format : token et key en base62 → reconstruit ?s= en base36
+    if (token && key && /^[0-9A-Za-z]+$/.test(token) && /^[0-9A-Za-z]+$/.test(key)) {
+      try {
+        const keyBytes = b62ToBytes(key);
+        const ivCipher = b62ToBytes(token);
+        const combined = new Uint8Array(keyBytes.length + ivCipher.length);
+        combined.set(keyBytes, 0); combined.set(ivCipher, keyBytes.length);
+        link = baseUrl() + '?s=' + b36FromBytes(combined);
+      } catch { link = baseUrl() + '?i=' + encodeURIComponent(token) + (key ? '&k=' + key : ''); }
+    } else {
+      link = baseUrl() + '?i=' + encodeURIComponent(token) + (key ? '&k=' + key : '');
+    }
+    await copyText(link, 'Lien copié');
+  }));
   
   $$('[data-action="revokeShare"]', E.sharesList).forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
@@ -3962,6 +4003,64 @@ function b64uToBytes(s) {
   const bin = atob(s.replace(/-/g,'+').replace(/_/g,'/') + pad);
   return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
+// ── BASE62 (0-9 A-Z a-z) — pour stockage interne token/keyHex ──
+const B62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+function b62FromBytes(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let n = 0n;
+  for (const b of bytes) n = (n << 8n) | BigInt(b);
+  if (n === 0n) return B62[0].repeat(bytes.length);
+  let out = '';
+  while (n > 0n) { out = B62[Number(n % 62n)] + out; n /= 62n; }
+  let leading = 0;
+  for (const b of bytes) { if (b === 0) leading++; else break; }
+  return B62[0].repeat(leading) + out;
+}
+function b62ToBytes(s) {
+  let n = 0n;
+  for (const c of s) {
+    const v = B62.indexOf(c);
+    if (v < 0) throw new Error('Invalid base62: ' + c);
+    n = n * 62n + BigInt(v);
+  }
+  const bytes = [];
+  while (n > 0n) { bytes.unshift(Number(n & 0xffn)); n >>= 8n; }
+  let leading = 0;
+  for (const c of s) { if (c === B62[0]) leading++; else break; }
+  const result = new Uint8Array(leading + bytes.length);
+  result.set(bytes, leading);
+  return result;
+}
+// ── BASE36 (0-9 A-Z) — encodage QR alphanumérique pour ?s= ──
+// Permet au QR d'utiliser le mode alphanumérique (11 bits/2 chars vs 8 bits/char en byte mode)
+// → QR code ~20% moins dense à même données
+const B36 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function b36FromBytes(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let n = 0n;
+  for (const b of bytes) n = (n << 8n) | BigInt(b);
+  if (n === 0n) return B36[0].repeat(bytes.length);
+  let out = '';
+  while (n > 0n) { out = B36[Number(n % 36n)] + out; n /= 36n; }
+  let leading = 0;
+  for (const b of bytes) { if (b === 0) leading++; else break; }
+  return B36[0].repeat(leading) + out;
+}
+function b36ToBytes(s) {
+  let n = 0n;
+  for (const c of s.toUpperCase()) {
+    const v = B36.indexOf(c);
+    if (v < 0) throw new Error('Invalid base36: ' + c);
+    n = n * 36n + BigInt(v);
+  }
+  const bytes = [];
+  while (n > 0n) { bytes.unshift(Number(n & 0xffn)); n >>= 8n; }
+  let leading = 0;
+  for (const c of s) { if (c === B36[0]) leading++; else break; }
+  const result = new Uint8Array(leading + bytes.length);
+  result.set(bytes, leading);
+  return result;
+}
 // Payload compact : on ne garde que les champs utiles avec des clés courtes
 function buildCompactPayload(a) {
   const p = buildPayload(a);
@@ -4029,53 +4128,62 @@ async function decompressBytes(bytes) {
 }
 async function buildEncryptedInviteLink(a) {
   const payload = buildCompactPayload(a);
-  const shareKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+  // AES-128 : cle 16 octets (securite excellente, -21 chars vs AES-256)
+  const shareKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const raw = new TextEncoder().encode(JSON.stringify(payload));
   const compressed = await compressBytes(raw);
-  // Préfixe 1 octet : 0x01 = compressé, 0x00 = non compressé (rétrocompat)
+  // Prefixe 1 octet : 0x02 = AES-128 compresse (nouveau), 0x01 = AES-256 compresse, 0x00 = non compresse
   const dataToEncrypt = compressed.length < raw.length
-    ? (() => { const b = new Uint8Array(1 + compressed.length); b[0] = 0x01; b.set(compressed, 1); return b; })()
+    ? (() => { const b = new Uint8Array(1 + compressed.length); b[0] = 0x02; b.set(compressed, 1); return b; })()
     : (() => { const b = new Uint8Array(1 + raw.length); b[0] = 0x00; b.set(raw, 1); return b; })();
   const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, shareKey, dataToEncrypt);
   const rawKey = await crypto.subtle.exportKey('raw', shareKey);
-  // Concat IV + ciphertext → un seul b64url
-  const combined = new Uint8Array(12 + cipher.byteLength);
-  combined.set(iv, 0); combined.set(new Uint8Array(cipher), 12);
-  const token = b64uFromBytes(combined);
-  const keyB64 = b64uFromBytes(new Uint8Array(rawKey));
-  // Clé dans le fragment # → jamais envoyée au serveur, URL plus courte
-  return { token, link: `${baseUrl()}?i=${token}#k=${keyB64}` };
+  const keyBytes = new Uint8Array(rawKey); // 16 octets AES-128
+  const cipherBytes = new Uint8Array(cipher);
+  // ?s= : KEY(16) + IV(12) + cipher encodé en BASE36 (0-9 A-Z) → mode alphanumérique QR
+  const combined = new Uint8Array(16 + 12 + cipherBytes.length);
+  combined.set(keyBytes, 0); combined.set(iv, 16); combined.set(cipherBytes, 28);
+  const s = b36FromBytes(combined);
+  // Stockage interne en base62 (compact pour localStorage)
+  const tokenBytes = new Uint8Array(12 + cipherBytes.length);
+  tokenBytes.set(iv, 0); tokenBytes.set(cipherBytes, 12);
+  return { token: b62FromBytes(tokenBytes), keyHex: b62FromBytes(keyBytes), link: `${baseUrl()}?s=${s}` };
 }
 async function decryptInviteToken(token, keyB64) {
   try {
-    // Support ancien format hex (rétrocompat)
     let combined, keyBytes;
     if (token.includes(':')) {
-      // Ancien format : ivHex:cipherHex
+      // Ancien format hex : ivHex:cipherHex
       const [ivHex, cipherHex] = b64dec(token).split(':');
       combined = new Uint8Array([...hexToBytes(ivHex), ...hexToBytes(cipherHex)]);
       keyBytes = keyB64.length === 64 ? hexToBytes(keyB64) : b64uToBytes(keyB64);
+    } else if (/^[0-9A-Za-z]+$/.test(token) && /^[0-9A-Za-z]+$/.test(keyB64)
+               && !token.includes('-') && !token.includes('_')) {
+      // Nouveau format base62 interne
+      combined = b62ToBytes(token);
+      keyBytes = b62ToBytes(keyB64);
     } else {
+      // Format intermédiaire base64url (avec - ou _)
       combined = b64uToBytes(token);
       keyBytes = b64uToBytes(keyB64);
     }
     const iv = combined.slice(0, 12);
     const cipher = combined.slice(12);
-    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+    // keyBytes.length = 16 → AES-128, 32 → AES-256
+    const keyLen = keyBytes.length === 16 ? 128 : 256;
+    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM', length: keyLen }, false, ['decrypt']);
     const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
     const plainBytes = new Uint8Array(plainBuf);
-    // Préfixe 0x01 = compressé, 0x00 = non compressé (rétrocompat: pas de préfixe → ancien format)
     let jsonBytes;
-    if (plainBytes[0] === 0x01) {
+    if (plainBytes[0] === 0x02 || plainBytes[0] === 0x01) {
       jsonBytes = await decompressBytes(plainBytes.slice(1));
     } else if (plainBytes[0] === 0x00) {
       jsonBytes = plainBytes.slice(1);
     } else {
-      jsonBytes = plainBytes; // ancien format sans préfixe
+      jsonBytes = plainBytes;
     }
     const parsed = JSON.parse(new TextDecoder().decode(jsonBytes));
-    // Expandre si format compact (présence de 'n' au lieu de 'address')
     return parsed.n !== undefined ? expandCompactPayload(parsed) : parsed;
   } catch { return null; }
 }
@@ -4109,16 +4217,29 @@ function openShareSheet(id) {
 }
 async function createAndCopyInvite() {
   const a = byId(E.shareAddressSelect.value); if (!a) return toast('Choisis une adresse');
-  const { token, link } = await buildEncryptedInviteLink(a);
+  const { token, keyHex, link } = await buildEncryptedInviteLink(a);
   const p = buildPayload(a);
-  const keyHex = link.includes('#k=') ? link.split('#k=')[1] : (new URL(link).searchParams.get('k') || '');
   state.shares.push({ id: uid(), addressId: a.id, recipientLabel: p.recipientLabel || 'Invitation', permission: 'view', token, keyHex, createdAt: Date.now(), expiresAt: p.expiresAt || 0, revoked: false });
   saveState().catch(() => {}); await copyText(link, 'Lien créé & copié'); renderAll(); closeSheets();
 }
 function inviteFromUrl() {
   const params = new URLSearchParams(location.search);
+  // Nouveau format : ?s= contient KEY(16) + IV(12) + cipher en base36 (0-9 A-Z)
+  const s = params.get('s');
+  if (s && /^[0-9A-Za-z]+$/.test(s)) {
+    try {
+      const all = b36ToBytes(s.toUpperCase());
+      if (all.length > 28) {
+        const keyBytes = all.slice(0, 16);
+        const ivAndCipher = all.slice(16);
+        const token = b62FromBytes(ivAndCipher);
+        const keyB62 = b62FromBytes(keyBytes);
+        return { _enc: true, token, keyHex: keyB62 };
+      }
+    } catch {}
+  }
+  // Rétrocompat ancien format ?i= + #k= ou ?k=
   const raw = params.get('i') || params.get('invite');
-  // Clé dans #k= (fragment, nouveau format) ou ?k= (query, rétrocompat)
   const keyB64 = (location.hash.startsWith('#k=') ? location.hash.slice(3) : null) || params.get('k');
   if (!raw || !keyB64) return null;
   return { _enc: true, token: raw, keyHex: keyB64 };
@@ -4153,7 +4274,7 @@ function importInvite(p) {
   renderAll(); closeSheets(); pendingInvite = null; toast('Adresse importée ✓', 'success');
   // Nettoyer les params d'invitation de l'URL
   const cleanUrl = new URL(location.href);
-  cleanUrl.searchParams.delete('i'); cleanUrl.searchParams.delete('invite'); cleanUrl.searchParams.delete('k');
+  cleanUrl.searchParams.delete('i'); cleanUrl.searchParams.delete('invite'); cleanUrl.searchParams.delete('k'); cleanUrl.searchParams.delete('s');
   history.replaceState(null, '', cleanUrl.pathname + (cleanUrl.search === '?' ? '' : cleanUrl.search));
 }
 async function openImportByPaste() {
@@ -4162,6 +4283,18 @@ async function openImportByPaste() {
   try {
     let url;
     try { url = new URL(raw); } catch { url = new URL('https://x.com?' + raw.replace(/^[^?]*/, '')); }
+    // Nouveau format ?s= (base36 pour QR alphanumérique)
+    const sParam = url.searchParams.get('s');
+    if (sParam && /^[0-9A-Za-z]+$/.test(sParam)) {
+      const all = b36ToBytes(sParam.toUpperCase());
+      if (all.length > 28) {
+        const keyBytes = all.slice(0, 16);
+        const ivCipher = all.slice(16);
+        const p = await decryptInviteToken(b62FromBytes(ivCipher), b62FromBytes(keyBytes));
+        if (p?.kind === 'doorkeys.invite') { pendingInvite = p; openInvitePreview(p); return; }
+      }
+    }
+    // Rétrocompat ?i= + #k= / ?k=
     const enc = url.searchParams.get('i') || url.searchParams.get('invite');
     const keyB64 = url.searchParams.get('k') || (url.hash.startsWith('#k=') ? url.hash.slice(3) : null);
     if (!enc || !keyB64) throw new Error('Lien sans clé de déchiffrement');
