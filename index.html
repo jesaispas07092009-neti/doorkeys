@@ -2421,15 +2421,16 @@ const QRLocal = (() => {
   }
 
   return {
-    draw(text, canvas, fg='#000000', bg='#ffffff'){
+    // cssSize : taille logique (CSS pixels) souhaitée pour le canvas
+    draw(text, canvas, fg='#000000', bg='#ffffff', cssSize=280){
       const m=generate(text);
       if(!m){ console.error('QR: texte trop long'); return; }
       const n=m.length, quiet=4;
       const total=n+quiet*2;
-      // Cellule entière (pas de décimale) pour éviter les artefacts de rendu
-      const cell=Math.floor(canvas.width/total);
+      // Calcul de la cellule depuis la taille CSS logique (pas les pixels physiques)
+      const cell=Math.max(2, Math.floor(cssSize/total));
       const sz=cell*total;
-      // Adapter au Device Pixel Ratio (écrans Retina/HD)
+      // Appliquer le Device Pixel Ratio une seule fois ici
       const dpr=window.devicePixelRatio||1;
       canvas.width=sz*dpr; canvas.height=sz*dpr;
       canvas.style.width=sz+'px'; canvas.style.height=sz+'px';
@@ -2450,19 +2451,17 @@ function openQrModal(link, name) {
   const sub = $('#qrSub');
   if (!modal || !canvas || !sub) return;
   sub.textContent = name || `Scanne pour importer l'adresse`;
-  const dpr = window.devicePixelRatio || 1;
-  const size = 280;
-  canvas.style.width = size + 'px';
-  canvas.style.height = size + 'px';
-  canvas.width = size * dpr;
-  canvas.height = size * dpr;
+  // Ne pas pré-dimensionner le canvas ici : draw() s'en charge entièrement
   try {
-    QRLocal.draw(link, canvas, '#000000', '#ffffff');
+    QRLocal.draw(link, canvas, '#000000', '#ffffff', 280);
   } catch(e) {
+    const size = 280;
+    canvas.width = size; canvas.height = size;
+    canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = '#e05555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('QR non disponible', canvas.width/2, canvas.height/2);
+    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle = '#e05555'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('QR non disponible', size/2, size/2);
   }
   modal.classList.add('open');
   $('#qrCloseBtn')?.focus();
