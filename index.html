@@ -70,14 +70,14 @@
   [A11Y]     openMoreSheet   : focus trap + restauration focus actifs
 -->
 <!-- CSP corrigée -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; connect-src https://api-adresse.data.gouv.fr https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; img-src 'self' data: https://*.tile.openstreetmap.org blob:; worker-src 'self' blob:; manifest-src 'self' data:"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; connect-src https://api-adresse.data.gouv.fr https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://cdn.jsdelivr.net; img-src 'self' data: https://*.tile.openstreetmap.org blob:; worker-src 'self' blob:; manifest-src 'self' data:"/>
 <!-- PWA Manifest inline -->
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22DoorKeys%22%2C%22short_name%22%3A%22DoorKeys%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23080a0e%22%2C%22theme_color%22%3A%22%23080a0e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%252096%252096%2527%253E%253Crect%2520width%3D%252796%2527%2520height%3D%252796%2527%2520rx%3D%252720%2527%2520fill%3D%2527%2523111520%2527%2F%253E%253Ctext%2520x%3D%252748%2527%2520y%3D%252765%2527%2520text-anchor%3D%2527middle%2527%2520font-size%3D%252750%2527%253E%25E2%258C%2582%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D"/>
 <title>DoorKeys</title>
 <meta name="description" content="DoorKeys — Ton carnet d'accès privé. Digicodes, étages et interphones, toujours à portée de main."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<!-- CDN épinglées : tabler@3.19.0, leaflet@1.9.4 -->
+<!-- CDN épinglées : tabler@3.19.0, leaflet@1.9.4, qrcode@1.5.4 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
@@ -1014,14 +1014,14 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .qr-modal.open { opacity: 1; pointer-events: auto }
 .qr-box {
   background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px;
-  padding: 28px 24px; text-align: center; width: 100%; max-width: 320px;
+  padding: 28px 24px; text-align: center; width: 100%; max-width: 420px;
   transform: scale(.94); transition: .25s cubic-bezier(.34,1.56,.64,1);
 }
 .qr-modal.open .qr-box { transform: scale(1) }
 .qr-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px }
 .qr-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; line-height: 1.5 }
 .qr-canvas-wrap { display: flex; justify-content: center; margin-bottom: 20px }
-.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px }
+.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px; max-width: 100% }
 
 .modal-overlay {
   position: absolute; inset: 0; z-index: 1100;
@@ -1239,14 +1239,14 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 .qr-modal.open { opacity: 1; pointer-events: auto }
 .qr-box {
   background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px;
-  padding: 28px 24px; text-align: center; width: 100%; max-width: 320px;
+  padding: 28px 24px; text-align: center; width: 100%; max-width: 420px;
   transform: scale(.94); transition: .25s cubic-bezier(.34,1.56,.64,1);
 }
 .qr-modal.open .qr-box { transform: scale(1) }
 .qr-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px }
 .qr-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; line-height: 1.5 }
 .qr-canvas-wrap { display: flex; justify-content: center; margin-bottom: 20px }
-.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px }
+.qr-canvas-wrap canvas { border-radius: 12px; background: #fff; padding: 10px; max-width: 100% }
 
 .modal-overlay { padding: 12px }
   .modal-box     { padding: 18px }
@@ -1799,7 +1799,8 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
   <div class="qr-box">
     <div class="qr-title" id="qrTitle">QR Code</div>
     <div class="qr-sub" id="qrSub"></div>
-    <div class="qr-canvas-wrap"><canvas id="qrCanvas" width="200" height="200" aria-label="QR code"></canvas></div>
+    <div id="qrLinkInfo" style="font-size:11px;color:var(--text3);margin-bottom:8px;text-align:center"></div>
+    <div class="qr-canvas-wrap"><div id="qrCanvas" aria-label="QR code" style="display:inline-block"></div></div>
     <div class="btn-row">
       <button class="btn" id="qrCopyBtn"><i class="ti ti-copy" aria-hidden="true"></i> Copier le lien</button>
       <button class="btn primary" id="qrCloseBtn"><i class="ti ti-x" aria-hidden="true"></i> Fermer</button>
@@ -1811,6 +1812,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
 <!-- Leaflet épinglé @1.9.4 ; defer = non-bloquant -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -2168,327 +2170,41 @@ function closeArrivalMode() {
   if (modal) modal.classList.remove('open');
 }
 
-// ── QR CODE ──
+// ── QR CODE — qrcode@1.5.4 (node-qrcode) ──
 let qrCurrentLink = '';
-// ── QR CODE LOCAL (sans appel réseau) ──
-// Micro-implémentation QR Code Model 2, versions 1-20, correction L
-// Génère directement sur un <canvas> sans dépendance externe.
-const QRLocal = (() => {
-  // Tables GF(256) pour Reed-Solomon
-  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
-  (()=>{ let x=1; for(let i=0;i<255;i++){ EXP[i]=x; LOG[x]=i; x=(x<<1)^(x&0x80?0x11d:0); } for(let i=255;i<512;i++) EXP[i]=EXP[i-255]; })();
-  const gfMul=(a,b)=>a&&b?EXP[LOG[a]+LOG[b]]:0;
-  const gfPoly=(ec)=>{ let p=[1]; for(let i=0;i<ec;i++){ const r=[0,...p]; for(let j=0;j<p.length;j++){ r[j]^=gfMul(p[j],EXP[i]); r[j+1]^=gfMul(p[j],0); } p=r; } return p; };
-  const rsBlock=(data,ec)=>{ const g=gfPoly(ec),res=new Uint8Array(ec); for(const b of data){ const f=b^res[0]; res.copyWithin(0,1); res[ec-1]=0; for(let i=0;i<ec;i++) res[i]^=gfMul(f,g[g.length-1-i]); } return res; };
-
-  // Encodage alphanumérique / byte
-  const ALPHA='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
-  // Capacités alphanumérique EC=L (data codewords) — versions 1-40
-  const CAPS_ALPHA=[[],[25,7],[47,10],[77,15],[114,20],[154,26],[195,18],[224,20],[279,24],[335,30],[395,18],[468,20],[535,24],[619,26],[667,30],[758,22],[854,24],[938,28],[1046,30],[1153,28],[1249,28],[1352,28],[1460,28],[1588,30],[1704,30],[1853,26],[1990,28],[2132,30],[2223,30],[2369,30],[2520,30],[2677,30],[2840,30],[3009,30],[3183,30],[3351,30],[3537,30],[3729,30],[3927,30],[4087,30],[4296,30]];
-  function encodeAlphanumeric(text) {
-    // QR alphanumérique : paires de 2 chars encodées en 11 bits, seul en 6 bits
-    const bits = [];
-    const push = (v, n) => { for (let i = n-1; i >= 0; i--) bits.push((v>>i)&1); };
-    push(0b0010, 4); // mode alphanumérique
-    push(text.length, 9);
-    for (let i = 0; i < text.length - 1; i += 2) {
-      const v = ALPHA.indexOf(text[i]) * 45 + ALPHA.indexOf(text[i+1]);
-      push(v, 11);
-    }
-    if (text.length % 2) push(ALPHA.indexOf(text[text.length-1]), 6);
-    return { bits, len: text.length, mode: 'alpha' };
-  }
-  function encode(text){
-    // Tente le mode alphanumérique si tous les chars sont dans ALPHA (QR spec §7.4.4)
-    // Le mode alphanumérique génère des QR codes moins denses car plus efficace
-    const upperText = text.toUpperCase();
-    const canAlpha = [...upperText].every(c => ALPHA.includes(c));
-    if (canAlpha) return encodeAlphanumeric(upperText);
-    // Sinon : byte encoding (UTF-8)
-    const bytes=[...new TextEncoder().encode(text)];
-    const bits=[];
-    const push=(v,n)=>{ for(let i=n-1;i>=0;i--) bits.push((v>>i)&1); };
-    push(0b0100,4); push(bytes.length,8);
-    bytes.forEach(b=>push(b,8));
-    return {bits,len:bytes.length};
-  }
-
-  // Capacités (data codewords, ec codewords) pour EC niveau L — versions 1-40
-  const CAPS=[[],[19,7],[34,10],[55,15],[80,20],[108,26],[136,18],[156,20],[194,24],[232,30],[274,18],[321,20],[370,24],[428,26],[461,30],[523,22],[589,24],[647,28],[721,30],[795,28],[861,28],[932,28],[1006,28],[1094,30],[1174,30],[1276,26],[1370,28],[1468,30],[1531,30],[1631,30],[1735,30],[1843,30],[1955,30],[2071,30],[2191,30],[2306,30],[2434,30],[2566,30],[2702,30],[2812,30],[2956,30]];
-  // Nombre de modules par version
-  const MODS=[0,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,89,93,97,101,105,109,113,117,121,125,129,133,137,141,145,149,153,157,161,165,169,173,177];
-  // Positions des alignment patterns par version
-  const ALIGN=[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]];
-
-  function bestVersion(bits, mode){
-    const capsTable = mode === 'alpha' ? CAPS_ALPHA : CAPS;
-    for(let v=1;v<=40;v++){
-      const cap=capsTable[v]; if(!cap) continue;
-      const needed=Math.ceil((bits+4)/8);
-      if(needed<=cap[0]) return v;
-    }
-    return null;
-  }
-
-  function makeMatrix(v){
-    const n=MODS[v];
-    const m=Array.from({length:n},()=>new Int8Array(n).fill(-1));
-    return m;
-  }
-
-  function setFinder(m,r,c){
-    for(let dr=-1;dr<=7;dr++) for(let dc=-1;dc<=7;dc++){
-      const row=r+dr,col=c+dc;
-      if(row<0||col<0||row>=m.length||col>=m.length) continue;
-      const onBorder=dr===-1||dr===7||dc===-1||dc===7;
-      const inner=dr>=1&&dr<=5&&dc>=1&&dc<=5;
-      const innerCore=dr>=2&&dr<=4&&dc>=2&&dc<=4;
-      m[row][col]=onBorder||innerCore?1:0;
-    }
-  }
-
-  function setTiming(m){
-    const n=m.length;
-    for(let i=8;i<n-8;i++){
-      m[6][i]=i%2===0?1:0;
-      m[i][6]=i%2===0?1:0;
-    }
-  }
-
-  function setAlign(m,v){
-    const pos=ALIGN[v]; if(pos.length<2) return;
-    const centers=[];
-    for(const r of pos) for(const c of pos) centers.push([r,c]);
-    for(const [cr,cc] of centers){
-      if(m[cr][cc]!==-1) continue;
-      for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
-        const onBorder=Math.abs(dr)===2||Math.abs(dc)===2;
-        const center=dr===0&&dc===0;
-        m[cr+dr][cc+dc]=onBorder||center?1:0;
-      }
-    }
-  }
-
-  function reserveFormat(m,v){
-    const n=m.length;
-    for(let i=0;i<9;i++){
-      if(m[8][i]===-1) m[8][i]=0;
-      if(m[i][8]===-1) m[i][8]=0;
-    }
-    for(let i=0;i<8;i++){
-      if(m[8][n-1-i]===-1) m[8][n-1-i]=0;
-      if(m[n-1-i][8]===-1) m[n-1-i][8]=0;
-    }
-    m[n-8][8]=1; // dark module
-    // Version info blocks (versions 7+)
-    if(v>=7){
-      for(let i=0;i<6;i++){
-        m[n-11][i]=0; m[n-10][i]=0; m[n-9][i]=0;
-        m[i][n-11]=0; m[i][n-10]=0; m[i][n-9]=0;
-      }
-    }
-  }
-
-  // Précalcul des version info strings (versions 7-20)
-  // Polynôme générateur x^12+x^11+x^10+x^9+x^8+x^5+x^2+1 = 0x1F25
-  function versionInfoBits(v){
-    let val=v<<12;
-    for(let i=17;i>=12;i--) if(val&(1<<i)) val^=0x1F25<<(i-12);
-    return (v<<12)|val;
-  }
-  function writeVersionInfo(m,v){
-    if(v<7) return;
-    const n=m.length, bits=versionInfoBits(v);
-    for(let i=0;i<18;i++){
-      const b=(bits>>i)&1;
-      const row=Math.floor(i/3), col=i%3;
-      m[row][n-11+col]=b;
-      m[n-11+col][row]=b;
-    }
-  }
-
-  function* dataModules(m){
-    const n=m.length;
-    let up=true;
-    for(let col=n-1;col>=0;col-=2){
-      const c=col<=6?col-1:col;
-      const rows=up?Array.from({length:n},(_,i)=>n-1-i):Array.from({length:n},(_,i)=>i);
-      for(const row of rows){
-        for(let dc=0;dc<2;dc++){
-          const cc=c-dc;
-          if(cc===6) continue;
-          if(m[row][cc]===-1) yield [row,cc];
-        }
-      }
-      up=!up;
-    }
-  }
-
-  // Format string (mask 0, EC level L = 01)
-  const FORMAT_STRINGS={
-    0:0x77c4,1:0x72f3,2:0x7daa,3:0x789d,4:0x662f,5:0x6318,6:0x6c41,7:0x6976
-  };
-  function writeFormat(m,mask){
-    const n=m.length,fs=FORMAT_STRINGS[mask];
-    const bits=[];
-    for(let i=14;i>=0;i--) bits.push((fs>>i)&1);
-    let idx=0;
-    for(let i=0;i<6;i++) m[8][i]=bits[idx++];
-    m[8][7]=bits[idx++]; m[8][8]=bits[idx++]; m[7][8]=bits[idx++];
-    for(let i=5;i>=0;i--) m[i][8]=bits[idx++];
-    idx=0;
-    for(let i=n-1;i>=n-8;i--) m[8][i]=bits[idx++];
-    for(let i=n-7;i<n;i++) m[i][8]=bits[idx++];
-  }
-
-  const MASKS=[
-    (r,c)=>(r+c)%2===0,
-    (r,_)=>r%2===0,
-    (_,c)=>c%3===0,
-    (r,c)=>(r+c)%3===0,
-    (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
-    (r,c)=>(r*c)%2+(r*c)%3===0,
-    (r,c)=>((r*c)%2+(r*c)%3)%2===0,
-    (r,c)=>((r+c)%2+(r*c)%3)%2===0,
-  ];
-
-  function penaltyScore(m){
-    const n=m.length; let p=0;
-    // Rule 1: 5+ same in a row/col
-    for(let r=0;r<n;r++){
-      for(let start=0;start<n;){
-        let run=1; while(start+run<n&&m[r][start+run]===m[r][start]) run++;
-        if(run>=5) p+=run-2; start+=run;
-      }
-    }
-    for(let c=0;c<n;c++){
-      for(let start=0;start<n;){
-        let run=1; while(start+run<n&&m[start+run][c]===m[start][c]) run++;
-        if(run>=5) p+=run-2; start+=run;
-      }
-    }
-    // Rule 2: 2x2 blocks
-    for(let r=0;r<n-1;r++) for(let c=0;c<n-1;c++)
-      if(m[r][c]===m[r][c+1]&&m[r][c]===m[r+1][c]&&m[r][c]===m[r+1][c+1]) p+=3;
-    return p;
-  }
-
-  // Structure des blocs RS par version, EC niveau L : [g1_blocs, g1_data, g2_blocs, g2_data, ec_par_bloc]
-  const RS_BLOCKS=[null,
-    [1,19,0,0,7],[1,34,0,0,10],[1,55,0,0,15],[1,80,0,0,20],
-    [1,108,0,0,26],[2,68,0,0,18],[2,78,0,0,20],[2,97,0,0,24],
-    [2,116,0,0,30],[2,68,2,69,18],[4,81,0,0,20],[2,92,2,93,24],
-    [4,107,0,0,26],[3,115,1,116,30],[5,87,1,88,22],[5,98,1,99,24],
-    [1,107,5,108,28],[5,120,1,121,30],[3,113,4,114,28],[3,107,5,108,28],
-    [3,116,4,117,28],[0,0,7,116,28],[5,111,3,112,28],[11,87,4,88,30],
-    [11,98,5,99,30],[11,93,7,94,26],[3,107,13,108,28],[2,116,17,117,30],
-    [6,115,14,116,30],[4,120,15,121,30],[8,113,13,114,30],[8,107,22,108,30],
-    [4,107,27,108,30],[4,115,29,116,30],[7,115,30,116,30],[12,121,22,122,30],
-    [3,107,30,108,30],[14,108,25,109,30],[5,116,30,117,30],[12,120,30,121,30],
-  ];
-
-  function generate(text){
-    const {bits, mode} = encode(text);
-    const v = bestVersion(bits.length, mode);
-    if(!v) return null;
-    const capsTable = mode === 'alpha' ? CAPS_ALPHA : CAPS;
-    const [dataCW] = capsTable[v];
-    const [g1b,g1d,g2b,g2d,ecPer] = RS_BLOCKS[v];
-    // Pad bits
-    const allBits=[...bits,0,0,0,0];
-    while(allBits.length%8!==0) allBits.push(0);
-    while(allBits.length<dataCW*8){
-      allBits.push(...[1,1,1,0,1,1,0,0]);
-      if(allBits.length<dataCW*8) allBits.push(...[0,0,0,1,0,0,0,1]);
-    }
-    // Découper en blocs de données
-    const allData=new Uint8Array(dataCW);
-    for(let i=0;i<dataCW;i++) allData[i]=(allBits[i*8]<<7)|(allBits[i*8+1]<<6)|(allBits[i*8+2]<<5)|(allBits[i*8+3]<<4)|(allBits[i*8+4]<<3)|(allBits[i*8+5]<<2)|(allBits[i*8+6]<<1)|allBits[i*8+7];
-    const dataBlocks=[], ecBlocks=[];
-    let pos=0;
-    for(let i=0;i<g1b;i++){ dataBlocks.push(allData.slice(pos,pos+g1d)); ecBlocks.push(rsBlock(allData.slice(pos,pos+g1d),ecPer)); pos+=g1d; }
-    for(let i=0;i<g2b;i++){ dataBlocks.push(allData.slice(pos,pos+g2d)); ecBlocks.push(rsBlock(allData.slice(pos,pos+g2d),ecPer)); pos+=g2d; }
-    // Interleaving data puis EC
-    const codewords=[];
-    const maxData=Math.max(g1d,g2d);
-    for(let i=0;i<maxData;i++) for(const b of dataBlocks) if(i<b.length) codewords.push(b[i]);
-    for(let i=0;i<ecPer;i++) for(const b of ecBlocks) codewords.push(b[i]);
-    // Build matrix
-    const m=makeMatrix(v);
-    setFinder(m,0,0); setFinder(m,0,m.length-7); setFinder(m,m.length-7,0);
-    setTiming(m); setAlign(m,v); reserveFormat(m,v);
-    // Place data
-    let cwIdx=0,bitIdx=7;
-    for(const [r,c] of dataModules(m)){
-      m[r][c]=(codewords[cwIdx]>>bitIdx)&1;
-      if(--bitIdx<0){bitIdx=7;cwIdx++;}
-    }
-    // Find best mask
-    let bestMask=0,bestPenalty=Infinity;
-    for(let mask=0;mask<8;mask++){
-      const mm=m.map(row=>Int8Array.from(row));
-      for(let r=0;r<mm.length;r++) for(let c=0;c<mm.length;c++)
-        if(mm[r][c]<=1) mm[r][c]=mm[r][c]^(MASKS[mask](r,c)?1:0);
-      writeFormat(mm,mask);
-      writeVersionInfo(mm,v);
-      const pen=penaltyScore(mm);
-      if(pen<bestPenalty){bestPenalty=pen;bestMask=mask;}
-    }
-    // Apply best mask
-    for(let r=0;r<m.length;r++) for(let c=0;c<m.length;c++)
-      if(m[r][c]<=1) m[r][c]=m[r][c]^(MASKS[bestMask](r,c)?1:0);
-    writeFormat(m,bestMask);
-    writeVersionInfo(m,v);
-    return m;
-  }
-
-  return {
-    draw(text, canvas, fg='#000000', bg='#ffffff'){
-      const m=generate(text);
-      if(!m){ console.error('QR: texte trop long'); return; }
-      const n=m.length, quiet=4;
-      const total=n+quiet*2;
-      // Cellule entière (pas de décimale) pour éviter les artefacts de rendu
-      const cell=Math.floor(canvas.width/total);
-      const sz=cell*total;
-      // Adapter au Device Pixel Ratio (écrans Retina/HD)
-      const dpr=window.devicePixelRatio||1;
-      canvas.width=sz*dpr; canvas.height=sz*dpr;
-      canvas.style.width=sz+'px'; canvas.style.height=sz+'px';
-      const ctx=canvas.getContext('2d');
-      ctx.scale(dpr,dpr);
-      ctx.fillStyle=bg; ctx.fillRect(0,0,sz,sz);
-      ctx.fillStyle=fg;
-      for(let r=0;r<n;r++) for(let c=0;c<n;c++)
-        if(m[r][c]===1) ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
-    }
-  };
-})();
 
 function openQrModal(link, name) {
   qrCurrentLink = link;
   const modal = $('#qrModal');
-  const canvas = $('#qrCanvas');
+  const wrap = $('#qrCanvas');
   const sub = $('#qrSub');
-  if (!modal || !canvas || !sub) return;
-  sub.textContent = name || `Scanne pour importer l'adresse`;
-  const dpr = window.devicePixelRatio || 1;
-  const size = 280;
-  canvas.style.width = size + 'px';
-  canvas.style.height = size + 'px';
-  canvas.width = size * dpr;
-  canvas.height = size * dpr;
-  try {
-    QRLocal.draw(link, canvas, '#000000', '#ffffff');
-  } catch(e) {
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1c2235'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = '#e05555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('QR non disponible', canvas.width/2, canvas.height/2);
+  if (!modal || !wrap || !sub) return;
+  sub.textContent = name ? `${name} — Scanne pour importer` : `Scanne pour importer l'adresse`;
+  const linkInfo = $('#qrLinkInfo');
+  if (linkInfo) linkInfo.textContent = `🔒 Lien chiffré · clé incluse dans l'URL`;
+  // Vider le conteneur
+  wrap.innerHTML = '';
+  // Créer un canvas et générer le QR via qrcode@1.5.4
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
+  if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
+    QRCode.toCanvas(canvas, link, {
+      width: 360,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    }, function(err) {
+      if (err) {
+        wrap.innerHTML = '<div style="width:360px;height:360px;background:#1c2235;display:flex;align-items:center;justify-content:center;color:#e05555;font-size:12px;border-radius:8px">QR non disponible</div>';
+      }
+    });
+  } else {
+    wrap.innerHTML = '<div style="width:360px;height:360px;background:#1c2235;display:flex;align-items:center;justify-content:center;color:#e05555;font-size:12px;border-radius:8px">Librairie QR non chargée</div>';
   }
   modal.classList.add('open');
   $('#qrCloseBtn')?.focus();
 }
+
 function closeQrModal() {
   const modal = $('#qrModal');
   if (modal) modal.classList.remove('open');
@@ -4126,29 +3842,60 @@ async function decompressBytes(bytes) {
   chunks.forEach(c => { out.set(c, off); off += c.length; });
   return out;
 }
+// ── GIST : crée un Gist anonyme avec le payload chiffré et retourne l'ID ──
+async function createGist(encryptedPayload) {
+  const res = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify({
+      description: 'DoorKeys share',
+      public: true,
+      files: { 'doorkeys.txt': { content: encryptedPayload } },
+    }),
+  });
+  if (!res.ok) throw new Error('Gist creation failed: ' + res.status);
+  const data = await res.json();
+  return data.id; // ~20 chars
+}
+
+// ── GIST : lit le payload chiffré depuis un Gist ──
+async function readGist(gistId) {
+  const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+    headers: { 'Accept': 'application/vnd.github+json' },
+  });
+  if (!res.ok) throw new Error('Gist not found');
+  const data = await res.json();
+  const file = data.files?.['doorkeys.txt'];
+  if (!file) throw new Error('No doorkeys.txt in gist');
+  return file.content;
+}
+
 async function buildEncryptedInviteLink(a) {
   const payload = buildCompactPayload(a);
-  // AES-128 : cle 16 octets (securite excellente, -21 chars vs AES-256)
+  // AES-128 : clé 16 octets
   const shareKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const raw = new TextEncoder().encode(JSON.stringify(payload));
   const compressed = await compressBytes(raw);
-  // Prefixe 1 octet : 0x02 = AES-128 compresse (nouveau), 0x01 = AES-256 compresse, 0x00 = non compresse
   const dataToEncrypt = compressed.length < raw.length
     ? (() => { const b = new Uint8Array(1 + compressed.length); b[0] = 0x02; b.set(compressed, 1); return b; })()
     : (() => { const b = new Uint8Array(1 + raw.length); b[0] = 0x00; b.set(raw, 1); return b; })();
   const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, shareKey, dataToEncrypt);
   const rawKey = await crypto.subtle.exportKey('raw', shareKey);
-  const keyBytes = new Uint8Array(rawKey); // 16 octets AES-128
+  const keyBytes = new Uint8Array(rawKey);
   const cipherBytes = new Uint8Array(cipher);
-  // ?s= : KEY(16) + IV(12) + cipher encodé en BASE36 (0-9 A-Z) → mode alphanumérique QR
-  const combined = new Uint8Array(16 + 12 + cipherBytes.length);
-  combined.set(keyBytes, 0); combined.set(iv, 16); combined.set(cipherBytes, 28);
-  const s = b36FromBytes(combined);
-  // Stockage interne en base62 (compact pour localStorage)
+
+  // Stockage interne en base62
   const tokenBytes = new Uint8Array(12 + cipherBytes.length);
   tokenBytes.set(iv, 0); tokenBytes.set(cipherBytes, 12);
-  return { token: b62FromBytes(tokenBytes), keyHex: b62FromBytes(keyBytes), link: `${baseUrl()}?s=${s}` };
+  const token = b62FromBytes(tokenBytes);
+  const keyB62 = b62FromBytes(keyBytes);
+
+  // Lien inline ?s= : KEY(16) + IV(12) + cipher en base36 (mode alphanumérique QR)
+  const combined = new Uint8Array(16 + 12 + cipherBytes.length);
+  combined.set(keyBytes, 0); combined.set(iv, 16); combined.set(cipherBytes, 28);
+  const link = `${baseUrl()}?s=${b36FromBytes(combined)}`;
+  return { token, keyHex: keyB62, link };
 }
 async function decryptInviteToken(token, keyB64) {
   try {
@@ -4224,7 +3971,13 @@ async function createAndCopyInvite() {
 }
 function inviteFromUrl() {
   const params = new URLSearchParams(location.search);
-  // Nouveau format : ?s= contient KEY(16) + IV(12) + cipher en base36 (0-9 A-Z)
+  // Nouveau format Gist : ?g=GIST_ID#k=CLE_BASE36
+  const gistId = params.get('g');
+  const hashKey = location.hash.startsWith('#k=') ? location.hash.slice(3) : null;
+  if (gistId && hashKey) {
+    return { _gist: true, gistId, keyB36: hashKey };
+  }
+  // Format inline ?s= : KEY(16) + IV(12) + cipher en base36
   const s = params.get('s');
   if (s && /^[0-9A-Za-z]+$/.test(s)) {
     try {
@@ -4246,6 +3999,14 @@ function inviteFromUrl() {
 }
 async function resolveInvite(inv) {
   if (!inv) return null;
+  if (inv._gist) {
+    try {
+      const gistPayload = await readGist(inv.gistId);
+      const keyBytes = b36ToBytes(inv.keyB36.toUpperCase());
+      const ivCipher = b36ToBytes(gistPayload.toUpperCase());
+      return await decryptInviteToken(b62FromBytes(ivCipher), b62FromBytes(keyBytes));
+    } catch { return null; }
+  }
   if (inv._enc) return await decryptInviteToken(inv.token, inv.keyHex);
   return inv;
 }
@@ -4274,7 +4035,7 @@ function importInvite(p) {
   renderAll(); closeSheets(); pendingInvite = null; toast('Adresse importée ✓', 'success');
   // Nettoyer les params d'invitation de l'URL
   const cleanUrl = new URL(location.href);
-  cleanUrl.searchParams.delete('i'); cleanUrl.searchParams.delete('invite'); cleanUrl.searchParams.delete('k'); cleanUrl.searchParams.delete('s');
+  cleanUrl.searchParams.delete('i'); cleanUrl.searchParams.delete('invite'); cleanUrl.searchParams.delete('k'); cleanUrl.searchParams.delete('s'); cleanUrl.searchParams.delete('g');
   history.replaceState(null, '', cleanUrl.pathname + (cleanUrl.search === '?' ? '' : cleanUrl.search));
 }
 async function openImportByPaste() {
@@ -4283,7 +4044,18 @@ async function openImportByPaste() {
   try {
     let url;
     try { url = new URL(raw); } catch { url = new URL('https://x.com?' + raw.replace(/^[^?]*/, '')); }
-    // Nouveau format ?s= (base36 pour QR alphanumérique)
+    // Nouveau format Gist : ?g=GIST_ID#k=CLE_BASE36
+    const gistId = url.searchParams.get('g');
+    const hashKey = url.hash.startsWith('#k=') ? url.hash.slice(3) : null;
+    if (gistId && hashKey) {
+      toast('Chargement depuis Gist…');
+      const gistPayload = await readGist(gistId);
+      const keyBytes = b36ToBytes(hashKey.toUpperCase());
+      const ivCipher = b36ToBytes(gistPayload.toUpperCase());
+      const p = await decryptInviteToken(b62FromBytes(ivCipher), b62FromBytes(keyBytes));
+      if (p?.kind === 'doorkeys.invite') { pendingInvite = p; openInvitePreview(p); return; }
+    }
+    // Format inline ?s= (base36 pour QR alphanumérique)
     const sParam = url.searchParams.get('s');
     if (sParam && /^[0-9A-Za-z]+$/.test(sParam)) {
       const all = b36ToBytes(sParam.toUpperCase());
@@ -4695,12 +4467,21 @@ E.createInviteBtn.addEventListener('click', createAndCopyInvite);
 $('#createQrBtn')?.addEventListener('click', async () => {
   const a = byId(E.shareAddressSelect.value);
   if (!a) return toast('Choisis une adresse');
-  const { link } = await buildEncryptedInviteLink(a);
-  closeSheets();
-  setTimeout(() => openQrModal(link, a.name), 300);
+  const btn = $('#createQrBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .8s linear infinite"></i> Génération…'; }
+  try {
+    const { link } = await buildEncryptedInviteLink(a);
+    closeSheets();
+    setTimeout(() => openQrModal(link, a.name), 300);
+  } catch(e) {
+    toast('Erreur lors de la création du QR');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-qrcode" aria-hidden="true"></i> QR Code'; }
+  }
 });
 // ── SOCIAL SHARE HANDLERS ──
 async function buildShareText(a) {
+  toast('Création du lien…');
   const { link } = await buildEncryptedInviteLink(a);
   return { link, text: `DoorKeys : ${a.name}\n${link}` };
 }
