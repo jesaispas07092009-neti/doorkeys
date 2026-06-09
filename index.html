@@ -1496,6 +1496,11 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
           <div class="settings-row-left"><i class="ti ti-home" aria-hidden="true"></i><label class="settings-row-label" for="settingsWorkspace">Nom</label></div>
           <input id="settingsWorkspace" style="background:transparent;border:none;text-align:right;color:var(--text2);font-size:13px;outline:none;max-width:150px" placeholder="Mon espace" aria-label="Nom de l'espace de travail"/>
         </div>
+        <div class="settings-row" style="cursor:default">
+          <div class="settings-row-left"><i class="ti ti-link" aria-hidden="true"></i><label class="settings-row-label" for="settingsPublicUrl">URL publique</label></div>
+          <input id="settingsPublicUrl" style="background:transparent;border:none;text-align:right;color:var(--text2);font-size:12px;outline:none;max-width:180px" placeholder="https://monsite.com/doorkeys.html" aria-label="URL publique pour les QR codes"/>
+        </div>
+        <div style="padding:0 16px 6px;font-size:11px;color:var(--text3);line-height:1.5">Optionnel : URL où ce fichier est hébergé. Utilisée pour que les QR codes soient scannables depuis un autre appareil.</div>
         <div class="btn-row" style="padding:0 16px 14px">
           <button class="btn sm" id="saveWorkspaceBtn"><i class="ti ti-check" aria-hidden="true"></i> Enregistrer</button>
         </div>
@@ -1800,6 +1805,10 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
     <div class="qr-title" id="qrTitle">QR Code</div>
     <div class="qr-sub" id="qrSub"></div>
     <div id="qrLinkInfo" style="font-size:11px;color:var(--text3);margin-bottom:8px;text-align:center"></div>
+    <div id="qrWarning" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(232,213,163,.1);border:1px solid rgba(232,213,163,.3);border-radius:12px;font-size:12px;color:var(--gold);line-height:1.5;text-align:center">
+      ⚠️ <strong>QR non fonctionnel depuis un autre appareil</strong><br>
+      Ce fichier est ouvert en local. Configure une <strong>URL publique</strong> dans les Réglages pour que le QR soit scannable.
+    </div>
     <div class="qr-canvas-wrap"><div id="qrCanvas" aria-label="QR code" style="display:inline-block"></div></div>
     <div class="btn-row">
       <button class="btn" id="qrCopyBtn"><i class="ti ti-copy" aria-hidden="true"></i> Copier le lien</button>
@@ -4707,6 +4716,7 @@ const E = {
   importPreview: $('#importPreview'), importConfirmBtn: $('#importConfirmBtn'),
   importCancelBtn: $('#importCancelBtn'), closeImport: $('#closeImport'),
   settingsWorkspace: $('#settingsWorkspace'), saveWorkspaceBtn: $('#saveWorkspaceBtn'),
+  settingsPublicUrl: $('#settingsPublicUrl'),
   changePinBtn: $('#changePinBtn'), lockFromSettingsBtn: $('#lockFromSettingsBtn'),
   autoLockSelect: $('#autoLockSelect'), pinnedSelect: $('#pinnedSelect'),
   exportDataBtn: $('#exportDataBtn'), importDataBtn: $('#importDataBtn'),
@@ -5021,6 +5031,17 @@ function openQrModal(link, name) {
   sub.textContent = name ? `${name} — Scanne pour importer` : `Scanne pour importer l'adresse`;
   const linkInfo = $('#qrLinkInfo');
   if (linkInfo) linkInfo.textContent = `🔒 Lien chiffré · clé incluse dans l'URL`;
+  // Avertissement si l'URL est locale (file:// ou localhost sans URL publique configurée)
+  const qrWarning = $('#qrWarning');
+  if (qrWarning) {
+    const hasPublicUrl = !!localStorage.getItem('doorkeys_public_url');
+    const isLocal = isLocalUrl();
+    if (isLocal && !hasPublicUrl) {
+      qrWarning.style.display = 'block';
+    } else {
+      qrWarning.style.display = 'none';
+    }
+  }
   // Vider le conteneur
   wrap.innerHTML = '';
   // Créer un canvas et générer le QR via qrcode@1.5.4
@@ -5358,6 +5379,7 @@ function renderHeader() {
   const last = [...state.addresses].sort((a, b) => (b.lastVisited||0) - (a.lastVisited||0))[0];
   E.statVisit.textContent = last?.lastVisited ? fmtDate(last.lastVisited, false) : '—';
   if (E.settingsWorkspace) E.settingsWorkspace.value = state.workspaceName || '';
+  if (E.settingsPublicUrl) E.settingsPublicUrl.value = localStorage.getItem('doorkeys_public_url') || '';
   if (E.autoLockSelect) E.autoLockSelect.value = String(state.settings?.autoLockMinutes ?? 2);
   // Badge backup obsolète (> 30 jours)
   const lastExport = state.settings?.lastExportAt || 0;
@@ -6530,7 +6552,15 @@ $$('.emoji-opt').forEach(b => b.addEventListener('click', () => {
 }));
 
 // ── PARTAGE avec chiffrement AES-GCM du payload ──
-function baseUrl() { return location.href.split('#')[0].split('?')[0]; }
+function baseUrl() {
+  // Utilise l'URL publique configurée si le fichier est ouvert en local (file:// ou localhost)
+  const saved = localStorage.getItem('doorkeys_public_url');
+  if (saved && saved.startsWith('http')) return saved.split('#')[0].split('?')[0];
+  return location.href.split('#')[0].split('?')[0];
+}
+function isLocalUrl() {
+  return location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+}
 function buildPayload(a) {
   const hrs = Number(E.shareDuration.value || 0);
   return {
@@ -7376,7 +7406,18 @@ E.newInviteBtn.addEventListener('click', () => openShareSheet(''));
 E.importInviteBtn.addEventListener('click', openImportByPaste);
 E.importConfirmBtn.addEventListener('click', () => importInvite(pendingInvite));
 E.importCancelBtn.addEventListener('click', () => { pendingInvite = null; closeSheets(); });
-E.saveWorkspaceBtn.addEventListener('click', () => { const n = E.settingsWorkspace.value.trim(); if (!n) return toast('Nom vide'); state.workspaceName = n; saveState().catch(() => {}); renderAll(); toast('Enregistré'); });
+E.saveWorkspaceBtn.addEventListener('click', () => {
+  const n = E.settingsWorkspace.value.trim(); if (!n) return toast('Nom vide');
+  state.workspaceName = n;
+  // Sauvegarder l'URL publique
+  const urlVal = (E.settingsPublicUrl?.value || '').trim();
+  if (urlVal && urlVal.startsWith('http')) {
+    localStorage.setItem('doorkeys_public_url', urlVal);
+  } else if (!urlVal) {
+    localStorage.removeItem('doorkeys_public_url');
+  }
+  saveState().catch(() => {}); renderAll(); toast('Enregistré');
+});
 E.changePinBtn.addEventListener('click', changePin);
 E.lockFromSettingsBtn.addEventListener('click', () => lock());
 E.autoLockSelect.addEventListener('change', () => { state.settings.autoLockMinutes = Number(E.autoLockSelect.value || 0); saveState().catch(() => {}); bumpInactivity(); toast('Réglage enregistré'); });
