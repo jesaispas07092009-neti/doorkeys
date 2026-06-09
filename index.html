@@ -7753,30 +7753,28 @@ async function init() {
   // Si déjà dans la PWA → rien à faire
   if (isStandalone) return;
 
-  const bannerDismissedAt = parseInt(localStorage.getItem('dk_banner_dismissed') || '0');
-  const dismissedRecently = Date.now() - bannerDismissedAt < 7 * 24 * 3600 * 1000;
+  // Uniquement sur Android Chrome (pas ordi, pas iPhone)
+  const ua = navigator.userAgent;
+  const isAndroid = /Android/.test(ua);
+  const isChromeMobile = /Chrome/.test(ua) && !/Edg|OPR|Samsung/.test(ua);
+  if (!isAndroid || !isChromeMobile) return;
 
-  if (dismissedRecently) return;
-
-  // Toujours afficher la bannière "Ouvrir dans l'app" dans Chrome
+  // Afficher la bannière
   const banner = document.getElementById('openInAppBanner');
   if (banner) banner.style.display = 'flex';
 
   document.getElementById('openInAppBtn')?.addEventListener('click', () => {
-    // Sur Android, intent:// peut forcer l'ouverture dans la PWA installée
     const url = location.href;
-    // Tenter intent Android
-    const intentUrl = url.replace(/^https?:\/\//, 'intent://').replace(/$/, '#Intent;scheme=https;action=android.intent.action.VIEW;end');
+    // Intent Android pour tenter d'ouvrir dans la PWA installée
+    const intentUrl = url.replace(/^https:\/\//, 'intent://') + '#Intent;scheme=https;action=android.intent.action.VIEW;end';
     const a = document.createElement('a');
     a.href = intentUrl;
     try { a.click(); } catch {}
-    // Fallback : recharger l'URL courante (Android peut proposer d'ouvrir dans la PWA)
-    setTimeout(() => { window.location.href = url; }, 300);
+    setTimeout(() => { window.location.href = url; }, 400);
   });
 
   document.getElementById('openInAppClose')?.addEventListener('click', () => {
     if (banner) banner.style.display = 'none';
-    localStorage.setItem('dk_banner_dismissed', Date.now().toString());
   });
 })();
 
