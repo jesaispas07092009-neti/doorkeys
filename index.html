@@ -6127,10 +6127,6 @@ function detectNearbyAddress() {
     if (nearest && minDist < 0.3) { // moins de 300m
       nearbyOverride = nearest;
       renderQuickBanner();
-      // Mode arrivée imminente si < 100m et pas encore affiché cette session
-      if (minDist < 0.1 && !arrivalShown) {
-        setTimeout(() => openArrivalMode(nearest), 800);
-      }
     }
   }, () => {}, { timeout: 4000, maximumAge: 60000, enableHighAccuracy: false });
 }
@@ -6750,9 +6746,11 @@ async function decryptInviteToken(token, keyB64) {
       combined = b62ToBytes(token);
       keyBytes = b62ToBytes(keyB64);
     } else {
-      // Format intermédiaire base64url (avec - ou _)
+      // Token base64url ; clé peut être base62 ou base64url
       combined = b64uToBytes(token);
-      keyBytes = b64uToBytes(keyB64);
+      keyBytes = /^[0-9A-Za-z]+$/.test(keyB64) && !keyB64.includes('-') && !keyB64.includes('_')
+        ? b62ToBytes(keyB64)
+        : b64uToBytes(keyB64);
     }
     const iv = combined.slice(0, 12);
     const cipher = combined.slice(12);
