@@ -7588,12 +7588,13 @@ async function bioAuthenticate() {
   btn?.classList.add('scanning');
 
   try {
-    // allowCredentials vide = credential discoverable (Android Credential Manager, iOS Passkeys)
-    // allowCredentials avec ID = credential classique (desktop, anciens Android)
-    // On essaie d'abord avec l'ID explicite, et on retombe sur discoverable en cas d'erreur
-    const allowCreds = credIdB64
-      ? [{ type: 'public-key', id: b64urlDecode(credIdB64) }]
-      : [];
+    // Sur Android, le Credential Manager rejette allowCredentials avec un ID inconnu
+    // AVANT même d'afficher le capteur → on passe toujours un tableau vide sur Android
+    // Sur iOS/desktop, on passe l'ID explicite pour plus de fiabilité
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const allowCreds = (isAndroid || !credIdB64)
+      ? []
+      : [{ type: 'public-key', id: b64urlDecode(credIdB64) }];
 
     await navigator.credentials.get({ publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -7630,36 +7631,16 @@ async function bioAuthenticate() {
     return true;
   } catch (e) {
     if (e.name !== 'NotAllowedError') {
-      if (e.message && e.message.includes('credential manager')) {
-        // Tentative de récupération : réessayer sans allowCredentials (discoverable)
-        try {
-          await navigator.credentials.get({ publicKey: {
-            challenge: crypto.getRandomValues(new Uint8Array(32)),
-            rpId: location.hostname,
-            allowCredentials: [],   // discoverable — laisse l'OS choisir
-            userVerification: 'required',
-            timeout: 60000,
-          }});
-          // Si ça marche, continuer le déchiffrement
-          const bioKey = await bioImportKey(keyB64);
-          const pinStr = await bioPinDecrypt(encPin, bioKey);
-          const ok = await verifyPin(pinStr);
-          if (!ok) { toast('Erreur interne biométrie'); return false; }
-          const raw = localStorage.getItem(KEY);
-          if (raw) {
-            const wrapper = JSON.parse(raw);
-            const key = await deriveEncKey(pinStr, wrapper.security.encKeySalt);
-            const decrypted = await decryptData(key, wrapper.data);
-            encKey = key;
-            const base = defaultState();
-            state = { ...base, ...decrypted, security: { ...base.security, ...wrapper.security }, settings: { ...base.settings, ...(decrypted.settings || {}) }, addresses: Array.isArray(decrypted.addresses) ? decrypted.addresses.map(normalizeAddr) : [], shares: Array.isArray(decrypted.shares) ? decrypted.shares.map(normalizeShare) : [] };
-          }
-          unlock();
-          return true;
-        } catch {
-          bioClear();
-          toast('Erreur Android — biométrie réinitialisée, réactive-la dans les réglages');
-        }
+      const isCredentialError = e.message && (
+        e.message.includes('credential manager') ||
+        e.message.includes('unknown error') ||
+        e.name === 'UnknownError'
+      );
+      if (isCredentialError) {
+        bioClear();
+        // Masquer le bouton biométrique sur l'écran de verrou
+        $('#biometricBtn')?.classList.add('hidden');
+        toast('Biométrie réinitialisée — réactive-la dans Réglages › Sécurité');
       } else {
         toast('Biométrie échouée : ' + (e.message || e.name));
       }
