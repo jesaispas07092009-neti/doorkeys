@@ -1530,6 +1530,11 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
         <div id="biometricUnsupported" class="hidden" style="padding:8px 16px 14px;font-size:12px;color:var(--text3)">
           Biométrie non disponible sur cet appareil ou navigateur.
         </div>
+        <div style="padding:4px 16px 12px">
+          <button onclick="bioShowDebug()" style="font-size:11px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">
+            🔍 Debug biométrie
+          </button>
+        </div>
         <div class="settings-row" style="cursor:default">
           <div class="settings-row-left"><i class="ti ti-clock" aria-hidden="true"></i><label class="settings-row-label" for="autoLockSelect">Verrouillage auto</label></div>
           <select class="select-input" id="autoLockSelect" aria-label="Délai de verrouillage automatique">
@@ -7517,6 +7522,34 @@ async function bioPinDecrypt(str, key) {
   return new TextDecoder().decode(plain);
 }
 
+// ══ DEBUG BIOMÉTRIE ══
+const BIO_DEBUG_KEY = 'doorkeys_bio_debug';
+function bioLog(msg, data) {
+  const logs = JSON.parse(localStorage.getItem(BIO_DEBUG_KEY) || '[]');
+  logs.push({ t: new Date().toISOString(), msg, data: data !== undefined ? JSON.stringify(data) : '' });
+  if (logs.length > 50) logs.splice(0, logs.length - 50);
+  localStorage.setItem(BIO_DEBUG_KEY, JSON.stringify(logs));
+  console.log('[BIO]', msg, data);
+}
+function bioShowDebug() {
+  const logs = JSON.parse(localStorage.getItem(BIO_DEBUG_KEY) || '[]');
+  const ua = navigator.userAgent;
+  const hasPKC = !!window.PublicKeyCredential;
+  const lines = [
+    "UA: " + ua,
+    "PublicKeyCredential: " + hasPKC,
+    "rpId: " + location.hostname,
+    "Protocol: " + location.protocol,
+    "credId: " + (localStorage.getItem('doorkeys_bio_credId') ? 'present' : 'absent'),
+    "encPin: " + (localStorage.getItem('doorkeys_bio_pin_enc') ? 'present' : 'absent'),
+    "bioKey: " + (localStorage.getItem('doorkeys_bio_key') ? 'present' : 'absent'),
+    "--- Logs ---",
+    ...logs.map(l => "[" + l.t.slice(11,19) + "] " + l.msg + (l.data ? " -> " + l.data : ""))
+  ].join("\n");
+  modal({ title: 'Debug Biometrie', msg: lines, confirmLabel: 'Fermer', hasInput: false });
+  setTimeout(() => { navigator.clipboard?.writeText(lines).catch(() => {}); }, 100);
+}
+
 // ── ENREGISTREMENT biométrique (appelé quand l'utilisateur active le toggle) ──
 async function bioRegister() {
   // On a besoin du PIN en mémoire pour l'enregistrer chiffré
@@ -7537,11 +7570,14 @@ async function bioRegister() {
 
   try {
     const rpId = location.hostname;
+    bioLog('register:start', { rpId, protocol: location.protocol, ua: navigator.userAgent.slice(0,80) });
     if (!rpId || rpId === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(rpId)) {
+      bioLog('register:blocked', 'localhost or IP');
       toast('Biométrie indisponible en local — utilise GitHub Pages ou un domaine HTTPS');
       return false;
     }
     const userId = crypto.getRandomValues(new Uint8Array(16));
+    bioLog('register:creating-credential');
 
     const cred = await navigator.credentials.create({ publicKey: {
       rp: { name: 'DoorKeys', id: rpId },
@@ -7549,14 +7585,16 @@ async function bioRegister() {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
       pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
       authenticatorSelection: {
-        authenticatorAttachment: 'platform',   // force le capteur biométrique intégré (pas de clé USB)
-        residentKey: 'preferred',              // credential discoverable → compatible Android Credential Manager
-        requireResidentKey: false,             // non bloquant si non supporté
+        authenticatorAttachment: 'platform',
+        residentKey: 'preferred',
+        requireResidentKey: false,
         userVerification: 'required',
       },
       timeout: 60000,
       attestation: 'none',
     }});
+
+    bioLog('register:cred-ok', { type: cred.type, idLen: cred.rawId.byteLength });
 
     // Générer une clé AES locale, chiffrer le PIN avec, stocker tout ça
     const bioKey = await bioGenKey();
@@ -7566,13 +7604,15 @@ async function bioRegister() {
     localStorage.setItem(BIO_CRED_KEY, b64urlEncode(cred.rawId));
     localStorage.setItem(BIO_PIN_KEY, encPin);
     localStorage.setItem('doorkeys_bio_key', keyB64);
+    bioLog('register:stored-ok');
 
     return true;
   } catch (e) {
+    bioLog('register:ERROR', { name: e.name, message: e.message, stack: (e.stack||'').slice(0,200) });
     if (e.name === 'NotAllowedError') toast('Biométrie annulée');
     else if (e.name === 'InvalidStateError') { bioClear(); toast('Réessaie — credential réinitialisé'); }
     else if (e.name === 'SecurityError') toast('Domaine non autorisé pour la biométrie (HTTPS requis)');
-    else toast('Erreur biométrie : ' + e.message);
+    else toast('Erreur biométrie : ' + e.name + ' — ' + e.message);
     return false;
   }
 }
@@ -7588,13 +7628,12 @@ async function bioAuthenticate() {
   btn?.classList.add('scanning');
 
   try {
-    // Sur Android, le Credential Manager rejette allowCredentials avec un ID inconnu
-    // AVANT même d'afficher le capteur → on passe toujours un tableau vide sur Android
-    // Sur iOS/desktop, on passe l'ID explicite pour plus de fiabilité
     const isAndroid = /Android/.test(navigator.userAgent);
     const allowCreds = (isAndroid || !credIdB64)
       ? []
       : [{ type: 'public-key', id: b64urlDecode(credIdB64) }];
+
+    bioLog('auth:get', { isAndroid, allowCredsLen: allowCreds.length, rpId: location.hostname });
 
     await navigator.credentials.get({ publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -7603,6 +7642,7 @@ async function bioAuthenticate() {
       userVerification: 'required',
       timeout: 60000,
     }});
+    bioLog('auth:get-ok');
 
     // Biométrie validée → récupère la clé → déchiffre le PIN
     const bioKey = await bioImportKey(keyB64);
