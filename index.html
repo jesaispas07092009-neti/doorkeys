@@ -1530,9 +1530,9 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
         <div id="biometricUnsupported" class="hidden" style="padding:8px 16px 14px;font-size:12px;color:var(--text3)">
           Biométrie non disponible sur cet appareil ou navigateur.
         </div>
-        <div style="padding:4px 16px 12px">
-          <button onclick="bioShowDebug()" style="font-size:11px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">
-            🔍 Debug biométrie
+        <div style="padding:6px 16px 14px">
+          <button id="bioDebugBtn" onclick="bioShowDebug()" style="font-size:12px;color:var(--text3);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;padding:8px 16px;cursor:pointer;width:100%;text-align:left">
+            🔍 Voir les logs de debug biométrie
           </button>
         </div>
         <div class="settings-row" style="cursor:default">
@@ -7533,21 +7533,21 @@ function bioLog(msg, data) {
 }
 function bioShowDebug() {
   const logs = JSON.parse(localStorage.getItem(BIO_DEBUG_KEY) || '[]');
-  const ua = navigator.userAgent;
   const hasPKC = !!window.PublicKeyCredential;
   const lines = [
-    "UA: " + ua,
-    "PublicKeyCredential: " + hasPKC,
+    "UA: " + navigator.userAgent,
+    "PKC: " + hasPKC,
     "rpId: " + location.hostname,
-    "Protocol: " + location.protocol,
-    "credId: " + (localStorage.getItem('doorkeys_bio_credId') ? 'present' : 'absent'),
-    "encPin: " + (localStorage.getItem('doorkeys_bio_pin_enc') ? 'present' : 'absent'),
-    "bioKey: " + (localStorage.getItem('doorkeys_bio_key') ? 'present' : 'absent'),
+    "proto: " + location.protocol,
+    "credId: " + (localStorage.getItem('doorkeys_bio_credId') ? 'OK' : 'ABSENT'),
+    "encPin: " + (localStorage.getItem('doorkeys_bio_pin_enc') ? 'OK' : 'ABSENT'),
+    "bioKey: " + (localStorage.getItem('doorkeys_bio_key') ? 'OK' : 'ABSENT'),
     "--- Logs ---",
-    ...logs.map(l => "[" + l.t.slice(11,19) + "] " + l.msg + (l.data ? " -> " + l.data : ""))
+    ...logs.map(l => "[" + l.t.slice(11,19) + "] " + l.msg + (l.data ? " " + l.data : ""))
   ].join("\n");
-  modal({ title: 'Debug Biometrie', msg: lines, confirmLabel: 'Fermer', hasInput: false });
-  setTimeout(() => { navigator.clipboard?.writeText(lines).catch(() => {}); }, 100);
+  // Copier dans le presse-papiers ET afficher en alert natif (toujours accessible)
+  navigator.clipboard?.writeText(lines).catch(() => {});
+  alert(lines);
 }
 
 // ── ENREGISTREMENT biométrique (appelé quand l'utilisateur active le toggle) ──
