@@ -1293,6 +1293,28 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 <body>
 <div id="app">
 
+<!-- ══ BANNIÈRE OUVRIR DANS L'APP ══ -->
+<div id="openInAppBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;max-width:480px;margin:0 auto;background:linear-gradient(135deg,#1c2235,#161b2a);border-bottom:1px solid rgba(232,213,163,.25);padding:10px 16px;display:none;align-items:center;gap:10px;">
+  <span style="font-size:20px">⌂</span>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:700;color:#eceef5">Ouvrir dans DoorKeys</div>
+    <div style="font-size:11px;color:#7d86a0">Meilleure expérience dans l'app</div>
+  </div>
+  <button id="openInAppBtn" style="height:34px;padding:0 14px;border-radius:10px;background:linear-gradient(135deg,#e8d5a3,#c8a76a);color:#0d0d0d;font-size:12px;font-weight:800;border:none;cursor:pointer;flex-shrink:0">Ouvrir</button>
+  <button id="openInAppClose" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.08);border:none;cursor:pointer;color:#7d86a0;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0" aria-label="Fermer">×</button>
+</div>
+
+<!-- ══ BANNIÈRE INSTALLER L'APP ══ -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;max-width:480px;margin:0 auto;background:linear-gradient(135deg,#1c2235,#161b2a);border-top:1px solid rgba(232,213,163,.25);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0));display:none;align-items:center;gap:10px;">
+  <span style="font-size:22px">⌂</span>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:700;color:#eceef5">Installer DoorKeys</div>
+    <div style="font-size:11px;color:#7d86a0;line-height:1.4">Accès rapide depuis l'écran d'accueil</div>
+  </div>
+  <button id="installBtn" style="height:34px;padding:0 14px;border-radius:10px;background:linear-gradient(135deg,#e8d5a3,#c8a76a);color:#0d0d0d;font-size:12px;font-weight:800;border:none;cursor:pointer;flex-shrink:0">Installer</button>
+  <button id="installBannerClose" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.08);border:none;cursor:pointer;color:#7d86a0;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0" aria-label="Fermer">×</button>
+</div>
+
 <!-- ══ LOCK SCREEN ══ -->
 <div id="lock">
   <div class="lock-brand">
@@ -7734,6 +7756,101 @@ async function init() {
   // Init biométrie (async, non bloquant)
   bioInitUI().catch(() => {});
 }
+// ── BANNIÈRE OUVRIR DANS L'APP / INSTALLER ──
+(function() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  // Si déjà dans la PWA → rien à faire
+  if (isStandalone) return;
+
+  // Vérifie si on a un paramètre d'invitation (QR code scanné)
+  const hasInvite = location.search.includes('?s=') || location.search.includes('?g=')
+    || location.search.includes('?i=') || location.search.includes('?invite=');
+
+  const bannerDismissedAt = parseInt(localStorage.getItem('dk_banner_dismissed') || '0');
+  const dismissedRecently = Date.now() - bannerDismissedAt < 7 * 24 * 3600 * 1000; // 7 jours
+
+  let deferredInstallPrompt = null;
+
+  // Capturer l'événement beforeinstallprompt (Android Chrome)
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+
+    if (dismissedRecently) return;
+
+    // Si lien d'invitation → montrer bannière "Ouvrir dans l'app" si PWA détectable
+    // Sinon montrer bannière "Installer"
+    showInstallBanner();
+  });
+
+  function showInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (!banner) return;
+    banner.style.display = 'flex';
+    // Pousser le contenu vers le haut pour ne pas cacher les boutons
+    const app = document.getElementById('app');
+    if (app) app.style.paddingBottom = '72px';
+  }
+
+  function hideInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (!banner) return;
+    banner.style.display = 'none';
+    const app = document.getElementById('app');
+    if (app) app.style.paddingBottom = '';
+    localStorage.setItem('dk_banner_dismissed', Date.now().toString());
+  }
+
+  document.getElementById('installBtn')?.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    hideInstallBanner();
+  });
+
+  document.getElementById('installBannerClose')?.addEventListener('click', hideInstallBanner);
+
+  // Bannière "Ouvrir dans l'app" — uniquement si on vient d'un QR/lien d'invitation
+  // et que la PWA est déjà installée (getInstalledRelatedApps sur Android)
+  if (hasInvite && !dismissedRecently) {
+    (async () => {
+      try {
+        // API expérimentale mais supportée sur Chrome Android 84+
+        const apps = navigator.getInstalledRelatedApps
+          ? await navigator.getInstalledRelatedApps()
+          : [];
+        const installed = apps.length > 0;
+        if (installed) showOpenInAppBanner();
+      } catch {}
+    })();
+  }
+
+  function showOpenInAppBanner() {
+    const banner = document.getElementById('openInAppBanner');
+    if (!banner) return;
+    banner.style.display = 'flex';
+  }
+
+  function hideOpenInAppBanner() {
+    const banner = document.getElementById('openInAppBanner');
+    if (!banner) return;
+    banner.style.display = 'none';
+    localStorage.setItem('dk_banner_dismissed', Date.now().toString());
+  }
+
+  document.getElementById('openInAppBtn')?.addEventListener('click', () => {
+    // Rouvre le même lien — si la PWA est installée, Android proposera de l'ouvrir dedans
+    const url = location.href;
+    hideOpenInAppBanner();
+    window.location.href = url;
+  });
+
+  document.getElementById('openInAppClose')?.addEventListener('click', hideOpenInAppBanner);
+})();
+
 init();
 
 })();
