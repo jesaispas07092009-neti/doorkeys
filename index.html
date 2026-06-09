@@ -7472,7 +7472,19 @@ const BIO_PIN_KEY  = 'doorkeys_bio_pin_enc';  // stocke le PIN chiffré par la c
 async function bioAvailable() {
   try {
     if (!window.PublicKeyCredential) return false;
-    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    const basic = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (!basic) return false;
+    // Sur Android, isUserVerifyingPlatformAuthenticatorAvailable() peut retourner true
+    // même quand le Credential Manager est indisponible (Google Play Services pas à jour, WebView, etc.)
+    // On vérifie aussi isConditionalMediationAvailable si dispo (Chrome 108+)
+    if (/Android/.test(navigator.userAgent) && PublicKeyCredential.isConditionalMediationAvailable) {
+      try {
+        const cma = await PublicKeyCredential.isConditionalMediationAvailable();
+        bioLog('bioAvailable', { basic, cma });
+        return cma; // Plus fiable sur Android moderne
+      } catch { /* pas dispo, on garde basic */ }
+    }
+    return basic;
   } catch { return false; }
 }
 
@@ -7612,6 +7624,13 @@ async function bioRegister() {
     if (e.name === 'NotAllowedError') toast('Biométrie annulée');
     else if (e.name === 'InvalidStateError') { bioClear(); toast('Réessaie — credential réinitialisé'); }
     else if (e.name === 'SecurityError') toast('Domaine non autorisé pour la biométrie (HTTPS requis)');
+    else if (e.name === 'NotReadableError' || (e.message && e.message.includes('credential manager'))) {
+      await modal({
+        title: 'Biométrie indisponible',
+        msg: 'Android ne peut pas accéder au gestionnaire de credentials.\n\nSolutions :\n1. Ouvre DoorKeys dans Chrome (pas en PWA)\n2. Mets à jour Google Play Services\n3. Redémarre le téléphone puis réessaie',
+        confirmLabel: 'OK',
+      });
+    }
     else toast('Erreur biométrie : ' + e.name + ' — ' + e.message);
     return false;
   }
