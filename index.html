@@ -1738,18 +1738,18 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 </div>
 
 <!-- SHEET: Import invitation -->
-<div class="sheet" id="importSheet" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+<div class="sheet" id="importSheet" role="dialog" aria-modal="true" aria-labelledby="importTitle" style="display:flex;flex-direction:column;">
   <div class="handle" aria-hidden="true"></div>
-  <div class="sheet-inner">
+  <div class="sheet-inner" style="flex:1;overflow-y:auto;padding-bottom:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="sheet-title" id="importTitle">Invitation reçue</div>
       <button class="icon-btn" id="closeImport" aria-label="Fermer"><i class="ti ti-x" aria-hidden="true"></i></button>
     </div>
     <div class="share-preview" id="importPreview" aria-live="polite"></div>
-    <div class="btn-row" style="margin-top:14px">
-      <button class="btn primary" id="importConfirmBtn"><i class="ti ti-download" aria-hidden="true"></i> Importer</button>
-      <button class="btn" id="importCancelBtn">Annuler</button>
-    </div>
+  </div>
+  <div class="btn-row" style="padding:14px 18px calc(14px + env(safe-area-inset-bottom,0));border-top:1px solid var(--border);background:var(--bg1);flex-shrink:0;">
+    <button class="btn primary" id="importConfirmBtn"><i class="ti ti-download" aria-hidden="true"></i> Importer</button>
+    <button class="btn" id="importCancelBtn">Annuler</button>
   </div>
 </div>
 
@@ -5108,7 +5108,7 @@ function unlock() {
   }, 500);
   renderAll();
   detectNearbyAddress();
-  if (pendingInvite) setTimeout(() => openInvitePreview(pendingInvite), 600);
+  if (pendingInvite) setTimeout(() => openInvitePreview(pendingInvite, true), 600);
   checkInstallBanner();
   bioRefreshToggle();
 }
@@ -6847,9 +6847,9 @@ async function resolveInvite(inv) {
   if (inv._enc) return await decryptInviteToken(inv.token, inv.keyHex);
   return inv;
 }
-function openInvitePreview(inv) {
+function openInvitePreview(inv, silent) {
   resolveInvite(inv).then(p => {
-    if (!p) { toast('Invitation invalide ou clé manquante'); pendingInvite = null; return; }
+    if (!p) { if (!silent) toast('Invitation invalide ou clé manquante'); pendingInvite = null; return; }
     if (p.expiresAt && Date.now() > p.expiresAt) { toast('Invitation expirée'); pendingInvite = null; return; }
     const a = p.address || {};
     E.importPreview.innerHTML = `<strong>${esc(a.name || 'Adresse')}</strong>
