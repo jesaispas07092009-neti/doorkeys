@@ -7066,7 +7066,7 @@ function importBackup(file) {
         toast('Fichier invalide'); return;
       }
 
-      const ok = await modal({ title: 'Importer', msg: 'Remplacer toutes les données par ce fichier ?', confirmLabel: 'Importer', confirmClass: 'primary' });
+      const ok = await modal({ title: 'Importer', msg: 'Fusionner avec les données existantes ? Les entrées déjà présentes (même ID) ne seront pas écrasées.', confirmLabel: 'Fusionner', confirmClass: 'primary' });
       if (!ok) return;
       const base = defaultState();
       // Restaurer les photos dans IndexedDB depuis _photoData
@@ -7081,12 +7081,24 @@ function importBackup(file) {
           return norm;
         })
       );
+      // Fusionner : garder les entrées existantes, ajouter uniquement les nouvelles
+      const existingAddrIds = new Set(state.addresses.map(a => a.id));
+      const mergedAddresses = [
+        ...state.addresses,
+        ...restoredAddresses.filter(a => !existingAddrIds.has(a.id)),
+      ];
+      const existingShareIds = new Set(state.shares.map(s => s.id));
+      const importedShares = Array.isArray(data.shares) ? data.shares.map(normalizeShare) : [];
+      const mergedShares = [
+        ...state.shares,
+        ...importedShares.filter(s => !existingShareIds.has(s.id)),
+      ];
       state = {
         ...base, ...data,
         security: state.security,
         settings: { ...base.settings, ...(data.settings || {}) },
-        addresses: restoredAddresses,
-        shares: Array.isArray(data.shares) ? data.shares.map(normalizeShare) : [],
+        addresses: mergedAddresses,
+        shares: mergedShares,
       };
       await saveState(); renderAll(); toast('Import réussi ✓', 'success');
     } catch { toast('Fichier invalide'); }
