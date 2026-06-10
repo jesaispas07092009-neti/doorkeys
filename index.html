@@ -22,7 +22,7 @@
   Lockout       : localStorage + backoff 30s→2min→10min
   CSP           : Content-Security-Policy stricte
   CDN           : Versions épinglées tabler@3.19.0
-  Biométrie      : WebAuthn platform authenticator + AES-GCM PIN chiffré
+  Biométrie      : WebAuthn platform authenticator + AES-GCM PIN chiffré + avertissement sécurité
   NOTE SÉCURITÉ  : La clé AES qui chiffre le PIN biométrique est exportée en localStorage
                    (doorkeys_bio_key). Compromis documenté : nécessaire pour une PWA single-file
                    sans backend. Acceptable si le device n'est pas physiquement compromis.
@@ -43,7 +43,7 @@
   [CRITIQUE] renderShares    : lien copié inclut désormais le fragment #k= (clé de déchiffrement)
   [CRITIQUE] Signal          : window.open signal.me/#p/ supprimé (URL non fonctionnelle) — copie seule
   [HAUT]     enterPinDigit   : vérification à pin.length < expectedLen (non plus hardcodé < 4)
-  [HAUT]     hashPin         : PBKDF2 100k iterations (SHA-256 simple remplacé) — résistance brute-force
+  [HAUT]     hashPin         : PBKDF2 200k iterations (SHA-256 simple remplacé) — résistance brute-force
   [HAUT]     renderMap       : retry limité à 10 × 200ms puis message d'erreur (boucle infinie corrigée)
   [HAUT]     openImportByPaste : parsing URL robuste via try/catch + new URL() direct
   [HAUT]     CACHE_VERSION   : dynamique via document.lastModified — SW se met à jour à chaque release
@@ -1616,7 +1616,7 @@ input:checked + .slider::after { transform: translateX(18px); background: var(--
 
     <div class="form-field">
       <label class="form-label" id="emojiLabel">Emoji / icône</label>
-      <div class="emoji-picker-row" id="emojiPicker" role="group" aria-labelledby="emojiLabel">
+      <div class="emoji-picker-row" id="emojiPicker" role="radiogroup" aria-labelledby="emojiLabel">
         <div class="emoji-opt active" data-emoji="🏠" role="radio" aria-checked="true" tabindex="0" aria-label="Maison">🏠</div>
         <div class="emoji-opt" data-emoji="👨‍👩‍👧" role="radio" aria-checked="false" tabindex="0" aria-label="Famille">👨‍👩‍👧</div>
         <div class="emoji-opt" data-emoji="🤝" role="radio" aria-checked="false" tabindex="0" aria-label="Poignée de main">🤝</div>
@@ -4924,7 +4924,7 @@ async function hashPin(p, s) {
   const enc = new TextEncoder();
   const keyMat = await crypto.subtle.importKey('raw', enc.encode(norm(p)), { name: 'PBKDF2' }, false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(s), iterations: 100000 },
+    { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(s), iterations: 200000 },
     keyMat, 256
   );
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2,'0')).join('');
@@ -5326,7 +5326,7 @@ function cardHTML(a) {
   return `<div class="addr-card cat-${esc(a.category)}" data-id="${a.id}" role="button" tabindex="0" aria-label="Ouvrir la fiche ${esc(a.name)}">
     ${a.photoId ? '<div class="card-accent-bar"></div>' : ''}
     <div class="addr-top">
-      <div class="addr-emoji" aria-hidden="true">${a.emoji || '🏠'}</div>
+      <div class="addr-emoji" aria-hidden="true">${esc(a.emoji || '🏠')}</div>
       <div class="addr-main">
         <div class="addr-name">${esc(a.name || 'Sans nom')}${a.favorite ? ' <span aria-label="Favori" style="font-size:14px">⭐</span>' : ''}</div>
         <div class="addr-address">${esc(a.address || '')}</div>
@@ -5473,7 +5473,7 @@ function renderQuickBanner() {
   if (a.phone)   fields.push(`<a class="quick-field" href="tel:${esc(a.phone)}" style="text-decoration:none" aria-label="Appeler ${esc(a.contact || a.phone)}"><i class="ti ti-phone" style="font-size:14px" aria-hidden="true"></i><span class="val">${esc(a.contact || a.phone)}</span></a>`);
   E.quickBanner.innerHTML = `<div class="quick-banner-inner">
     <div class="quick-label">${isNearby ? "📍 À proximité" : "⚡ Accès rapide"}</div>
-    <div class="quick-addr-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
+    <div class="quick-addr-name">${esc(a.emoji || '🏠')} ${esc(a.name)}</div>
     <div class="quick-addr-street">${esc(a.address)}</div>
     <div class="quick-fields">${fields.join('')}</div>
     <button class="quick-open-btn" data-qaction="opendetail" data-id="${a.id}" aria-label="Ouvrir la fiche complète de ${esc(a.name)}"><i class="ti ti-chevron-right" style="font-size:13px" aria-hidden="true"></i> Ouvrir la fiche complète</button>
@@ -5800,7 +5800,7 @@ function addMapMarker(a) {
   if (typeof L === 'undefined' || !leafletMap || a.lat === null || a.lng === null) return;
   const catColors = { famille: '#e05555', amis: '#52b87a', boulot: '#5c7fff', autre: '#e8d5a3' };
   const col = catColors[a.category] || catColors.autre;
-  const icon = L.divIcon({ className: '', html: `<div style="width:34px;height:34px;border-radius:50%;background:${col};border:2px solid #080a0e;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.6);" role="img" aria-label="${esc(a.name)}">${a.emoji || '🏠'}</div>`, iconSize: [34,34], iconAnchor: [17,17] });
+  const icon = L.divIcon({ className: '', html: `<div style="width:34px;height:34px;border-radius:50%;background:${col};border:2px solid #080a0e;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.6);" role="img" aria-label="${esc(a.name)}">${esc(a.emoji || '🏠')}</div>`, iconSize: [34,34], iconAnchor: [17,17] });
   const m = L.marker([a.lat, a.lng], { icon }).addTo(leafletMap).bindPopup(`<div class="map-popup-name">${esc(a.name)}</div><div class="map-popup-street">${esc(a.address)}</div>`);
   m.on('click', () => { m.openPopup(); openDetail(a.id); });
   mapMarkers.push(m);
@@ -6144,7 +6144,7 @@ function renderLockPreview() {
   if (a.district) chips.push(`<span class="lock-preview-chip"><i class="ti ti-map-pin" aria-hidden="true" style="font-size:12px"></i>${esc(a.district)}</span>`);
   el.innerHTML = `
     <div class="lock-preview-label">⚡ Accès rapide</div>
-    <div class="lock-preview-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
+    <div class="lock-preview-name">${esc(a.emoji || '🏠')} ${esc(a.name)}</div>
     ${chips.length ? `<div class="lock-preview-meta">${chips.join('')}</div>` : ''}
   `;
   el.classList.remove('hidden');
@@ -6220,7 +6220,7 @@ function buildProximityList(usedFallback = false) {
       return `<div class="prox-item${isFirst ? ' hidden' : ''}" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.name)}, à ${d}">
         <div class="prox-dist" aria-hidden="true">${d}</div>
         <div class="prox-info">
-          <div class="prox-name">${a.emoji || '🏠'} ${esc(a.name)}</div>
+          <div class="prox-name">${esc(a.emoji || '🏠')} ${esc(a.name)}</div>
           <div class="prox-street">${esc(a.address)}</div>
           <div class="prox-bar-wrap"><div class="prox-bar-fill" style="width:${pct}%"></div></div>
         </div>
@@ -6271,7 +6271,7 @@ function renderFrequency() {
   }
   E.freqList.innerHTML = sorted.map((a, i) => `<div class="freq-row" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.name)}, ${a.periodVisits} visite${a.periodVisits !== 1 ? 's' : ''}">
       <div class="freq-rank" aria-hidden="true">${i+1}</div>
-      <div class="freq-info"><div class="freq-name">${a.emoji||'🏠'} ${esc(a.name)}</div><div class="freq-visits">${a.periodVisits} visite${a.periodVisits!==1?'s':''}</div></div>
+      <div class="freq-info"><div class="freq-name">${esc(a.emoji||'🏠')} ${esc(a.name)}</div><div class="freq-visits">${a.periodVisits} visite${a.periodVisits!==1?'s':''}</div></div>
       <div class="freq-bar-wrap" aria-hidden="true"><div class="freq-bar-fill" style="width:${Math.round(a.periodVisits/max*100)}%"></div></div>
     </div>`).join('');
   $$('[data-id]', E.freqList).forEach(el => {
@@ -6294,7 +6294,7 @@ function renderTimeline() {
       ${addrs.map((a, i) => `<div class="timeline-item">
         <div class="timeline-spine"><div class="timeline-dot"></div>${i < addrs.length-1 ? '<div class="timeline-connector"></div>' : ''}</div>
         <div class="timeline-card" data-id="${a.id}" role="button" tabindex="0" aria-label="Ouvrir ${esc(a.name)}">
-          <div class="timeline-card-name">${a.emoji||'🏠'} ${esc(a.name)}</div>
+          <div class="timeline-card-name">${esc(a.emoji||'🏠')} ${esc(a.name)}</div>
           <div class="timeline-card-date">${new Date(a.createdAt).toLocaleDateString('fr-FR')}</div>
           <div class="timeline-card-chips">${a.code ? `<span class="chip code" style="height:20px;font-size:10px"><i class="ti ti-lock-open" aria-hidden="true"></i>${esc(a.code)}</span>` : ''} ${a.district ? `<span class="chip" style="height:20px;font-size:10px"><i class="ti ti-map-pin" aria-hidden="true"></i>${esc(a.district)}</span>` : ''}</div>
         </div>
@@ -6321,7 +6321,7 @@ function renderDistricts() {
       <div class="quartier-block">
         <div class="quartier-header"><div class="quartier-name">${esc(q)}</div><div class="quartier-count">${addrs.length} lieu${addrs.length > 1 ? 'x' : ''}</div></div>
         <div class="quartier-scroll">${addrs.map(a => `<div class="quartier-mini" data-id="${a.id}" role="button" tabindex="0" aria-label="Ouvrir ${esc(a.name)}">
-          <div class="quartier-mini-emoji" aria-hidden="true">${a.emoji||'🏠'}</div>
+          <div class="quartier-mini-emoji" aria-hidden="true">${esc(a.emoji||'🏠')}</div>
           <div class="quartier-mini-name">${esc(a.name)}</div>
           <div class="quartier-mini-street">${esc(a.address)}</div>
           ${a.code ? `<span class="chip code" style="height:20px;font-size:10px;margin-top:6px"><i class="ti ti-lock-open" aria-hidden="true"></i>${esc(a.code)}</span>` : ''}
@@ -6333,7 +6333,7 @@ function renderDistricts() {
         <div class="quartier-header"><div class="quartier-name">Sans quartier</div><div class="quartier-count">${noDistrict.length} lieu${noDistrict.length > 1 ? 'x' : ''}</div></div>
         <p class="quartier-no-district-note">Ces adresses n'ont pas de quartier détecté. Ouvre leur fiche pour relancer la détection automatique.</p>
         <div class="quartier-scroll">${noDistrict.map(a => `<div class="quartier-mini" data-id="${a.id}" role="button" tabindex="0" aria-label="Ouvrir ${esc(a.name)}">
-          <div class="quartier-mini-emoji" aria-hidden="true">${a.emoji||'🏠'}</div>
+          <div class="quartier-mini-emoji" aria-hidden="true">${esc(a.emoji||'🏠')}</div>
           <div class="quartier-mini-name">${esc(a.name)}</div>
           <div class="quartier-mini-street">${esc(a.address)}</div>
         </div>`).join('')}</div>
@@ -6385,7 +6385,7 @@ async function renderDetail(a) {
     ${photoData ? `<img src="${photoData}" class="photo-thumb" alt="Photo de ${esc(a.name)}"/>` : ''}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">
       <div style="min-width:0;flex:1">
-        <div style="font-size:26px;margin-bottom:2px" aria-hidden="true">${a.emoji||'🏠'}</div>
+        <div style="font-size:26px;margin-bottom:2px" aria-hidden="true">${esc(a.emoji||'🏠')}</div>
         <div style="font-family:var(--serif);font-size:26px;letter-spacing:-.02em;line-height:1.1">${esc(a.name||'Sans nom')}</div>
         <div style="font-size:13px;color:var(--text2);margin-top:5px;line-height:1.5">${esc(a.address||'')}</div>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
@@ -6755,7 +6755,7 @@ async function readGist(gistId) {
 async function buildEncryptedInviteLink(a) {
   const payload = buildCompactPayload(a);
   // AES-128 : clé 16 octets
-  const shareKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']);
+  const shareKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const raw = new TextEncoder().encode(JSON.stringify(payload));
   const compressed = await compressBytes(raw);
@@ -7750,6 +7750,15 @@ async function bioInitUI() {
     bioToggle.checked = hasCredential;
     bioToggle.addEventListener('change', async () => {
       if (bioToggle.checked) {
+        // Avertissement sécurité : la clé AES est stockée en localStorage
+        const warn = await modal({
+          title: 'Avertissement sécurité',
+          msg: 'La clé de déchiffrement biométrique sera stockée localement sur cet appareil. N\'utilisez pas cette option sur un appareil partagé ou non chiffré.',
+          confirmLabel: 'Activer quand même',
+          confirmClass: 'btn',
+          cancelLabel: 'Annuler',
+        });
+        if (!warn) { bioToggle.checked = false; return; }
         const ok = await bioRegister();
         if (!ok) {
           bioToggle.checked = false;
